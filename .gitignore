@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+
+# Claude Code
+.claude/
+claude.md
+
+# Red de Ayuda SDD
+red-de-ayuda-sdd/
+
+# Cursor
+.cursor/
+.cursorignore
+.cursorindexingignore
+
+# GitHub Copilot
+.github/copilot-instructions.md
+
+# Windsurf / Codeium
+.windsurf/
+.codeiumignore
+
+# Aider
+.aider*
+
+# Continue
+.continue/
+
+# Zed
+.zed/
+
+# JetBrains AI
+.idea/
