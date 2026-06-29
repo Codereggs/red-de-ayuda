@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/* Design system raw CSS variables — accessible outside Tailwind contexts */
+@layer base {
+  :root {
+    --background: #faf7f2;
+    --foreground: #2c1f14;
+    --card: #fdfaf6;
+    --card-foreground: #2c1f14;
+    --primary: #b5704a;
+    --primary-foreground: #faf7f2;
+    --secondary: #e4ebe1;
+    --secondary-foreground: #2c4a2e;
+    --muted: #ede8e0;
+    --muted-foreground: #7a6555;
+    --accent: #e8c9b5;
+    --accent-foreground: #2c1f14;
+    --destructive: #c05a44;
+    --destructive-foreground: #faf7f2;
+    --border: rgba(44, 31, 20, 0.1);
+    --input-background: #f0ebe3;
+    --ring: #b5704a;
+    --chart-1: #b5704a;
+    --chart-2: #7a9e7e;
+    --chart-3: #d4a574;
+    --chart-4: #8b7355;
+    --chart-5: #c4845c;
+    --sidebar: #f5f0e8;
+  }
+}
+
+/* Tailwind v4 theme tokens */
+@theme {
+  /* Colors — semantic tokens */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input-background: var(--input-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+
+  /* Fonts — set as CSS vars by next/font on the <html> element */
+  --font-display: var(--font-lora), Georgia, serif;
+  --font-body: var(--font-nunito), system-ui, sans-serif;
+  --font-mono: var(--font-dm-mono), monospace;
+
+  /* Border radius overrides — see DESIGN_SYSTEM.md for mapping */
+  --radius-3xl: 1.25rem; /* 20px = design system --radius-xl */
+}
+
+/* Base styles */
+@layer base {
+  html {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-body);
+  }
+
+  * {
+    border-color: var(--border);
+  }
+}

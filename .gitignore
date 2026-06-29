@@ -31,3 +31,24 @@ red-de-ayuda-sdd/
 
 # JetBrains AI
 .idea/
+
+# Node.js
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# Misc
+.vercel
