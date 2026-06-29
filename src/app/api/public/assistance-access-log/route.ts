@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { z } from 'zod'
+import { getSession, isActiveHelperOrAdmin } from '@/shared/lib/auth/get-session'
 import { createServiceSupabaseClient } from '@/shared/lib/supabase/server'
 import { createCasesRepository } from '@/features/cases/repositories/cases.repository'
 import { hashIp } from '@/shared/lib/rate-limit'
@@ -12,6 +13,11 @@ const copyLogSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getSession()
+    if (!isActiveHelperOrAdmin(session)) {
+      return Response.json({ error: 'No autorizado.' }, { status: 401 })
+    }
+
     const parsed = copyLogSchema.safeParse(await req.json())
     if (!parsed.success) {
       return Response.json({ error: 'Datos de registro inválidos.' }, { status: 400 })

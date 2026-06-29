@@ -11,7 +11,6 @@ import { createNeedsRepository } from '../repositories/needs.repository'
 import {
   needCategoryCreateSchema,
   needFormSchema,
-  type NeedFormValues,
 } from '../schemas/needs.schema'
 import type { CaseNeedWithCategory } from '../types/needs.types'
 
@@ -205,5 +204,3 @@ export async function createNeedCategoryAction(
     return { success: false, error: 'No se pudo crear la categoría.' }
   }
 }
-
-export type { NeedFormValues }

@@ -7,7 +7,7 @@ function caseHeader(caseData: PublicCase): string[] {
     '',
     `Código: ${caseData.public_code}`,
     `Nombre: ${caseData.full_name}`,
-    `Situación: ${caseData.situation.name}`,
+    `Descripción: ${caseData.short_description}`,
     `Ubicación: ${caseData.city}, ${caseData.state}, ${caseData.country}`,
     '',
     'Necesidades:',

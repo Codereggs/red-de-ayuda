@@ -4,7 +4,6 @@ import type {
   CasePhone,
   AssistanceMethod,
   CasePrivateData,
-  SituationCategory,
 } from '@/shared/types/database.types'
 import type {
   ArchiveCaseInput,
@@ -15,7 +14,6 @@ import type {
   RevealAssistancePayload,
   UpdateCaseInput,
 } from '../types/cases.types'
-import { normalizeText } from '@/shared/utils/normalize-text'
 import type { Paginated } from '@/shared/types/common.types'
 import { PAGE_SIZE, encodeCursor, decodeCursor } from '@/shared/utils/pagination'
 
@@ -27,13 +25,13 @@ type RawPublicCase = {
   public_code: string
   case_type: 'person' | 'family'
   full_name: string
+  short_description: string
   public_notes: string | null
   public_contact_place: string
   country: string
   state: string
   city: string
   last_helped_at: string | null
-  situation_categories: { id: string; name: string } | null
   case_needs: {
     id: string
     quantity: number
@@ -45,7 +43,7 @@ type RawPublicCase = {
 }
 
 const PUBLIC_SELECT =
-  'id, public_code, case_type, full_name, public_notes, public_contact_place, country, state, city, last_helped_at, situation_categories(id, name), case_needs(id, quantity, unit, comments, deleted_at, need_categories(id, name))'
+  'id, public_code, case_type, full_name, short_description, public_notes, public_contact_place, country, state, city, last_helped_at, case_needs(id, quantity, unit, comments, deleted_at, need_categories(id, name))'
 
 export class CasesRepository {
   constructor(private readonly db: DBClient) {}
@@ -78,12 +76,11 @@ export class CasesRepository {
 
     if (filters.state) query = query.ilike('state', filters.state)
     if (filters.city) query = query.ilike('city', filters.city)
-    if (filters.situationId) query = query.eq('situation_category_id', filters.situationId)
     if (filters.search) {
       const search = filters.search.replace(/[%_,()]/g, ' ').trim()
       if (search) {
         query = query.or(
-          `full_name.ilike.%${search}%,city.ilike.%${search}%,state.ilike.%${search}%,country.ilike.%${search}%`,
+          `full_name.ilike.%${search}%,short_description.ilike.%${search}%,city.ilike.%${search}%,state.ilike.%${search}%,country.ilike.%${search}%`,
         )
       }
     }
@@ -188,12 +185,11 @@ export class CasesRepository {
     if (filters.caseType) query = query.eq('case_type', filters.caseType)
     if (filters.state) query = query.eq('state', filters.state)
     if (filters.city) query = query.eq('city', filters.city)
-    if (filters.situationId) query = query.eq('situation_category_id', filters.situationId)
     if (filters.search) {
       const search = filters.search.replace(/[%_,()]/g, ' ').trim()
       if (search) {
         query = query.or(
-          `full_name.ilike.%${search}%,public_code.ilike.%${search}%,city.ilike.%${search}%,state.ilike.%${search}%,country.ilike.%${search}%`,
+          `full_name.ilike.%${search}%,public_code.ilike.%${search}%,short_description.ilike.%${search}%,city.ilike.%${search}%,state.ilike.%${search}%,country.ilike.%${search}%`,
         )
       }
     }
@@ -280,38 +276,6 @@ export class CasesRepository {
       }))
   }
 
-  // ── Situation categories ─────────────────────────────────────────────────
-
-  async listSituationCategories(): Promise<SituationCategory[]> {
-    const { data, error } = await this.db
-      .from('situation_categories')
-      .select('*')
-      .is('deleted_at', null)
-      .order('name')
-    if (error) throw new Error(`[CasesRepository.listSituationCategories] ${error.message}`)
-    return (data ?? []) as SituationCategory[]
-  }
-
-  async createSituationCategory(name: string, createdByUserId: string): Promise<SituationCategory> {
-    const normalized = normalizeText(name)
-    const { data, error } = await this.db
-      .from('situation_categories')
-      .upsert(
-        {
-          name,
-          normalized_name: normalized,
-          created_by_user_id: createdByUserId,
-          deleted_at: null,
-        },
-        { onConflict: 'normalized_name' },
-      )
-      .select('*')
-      .single()
-    if (error) throw new Error(`[CasesRepository.createSituationCategory] ${error.message}`)
-    if (!data) throw new Error('[CasesRepository.createSituationCategory] No data returned')
-    return data as SituationCategory
-  }
-
   // ── Private data & phones (read) ─────────────────────────────────────────
 
   async findPrivateDataByCaseId(caseId: string): Promise<CasePrivateData | null> {
@@ -345,7 +309,7 @@ export class CasesRepository {
       .insert({
         full_name: input.fullName,
         case_type: input.caseType,
-        situation_category_id: input.situationCategoryId,
+        short_description: input.shortDescription,
         public_contact_place: input.publicContactPlace,
         state: input.state,
         city: input.city,
@@ -398,7 +362,7 @@ export class CasesRepository {
       .update({
         full_name: input.fullName,
         case_type: input.caseType,
-        situation_category_id: input.situationCategoryId,
+        short_description: input.shortDescription,
         public_contact_place: input.publicContactPlace,
         state: input.state,
         city: input.city,
@@ -491,13 +455,13 @@ export class CasesRepository {
       public_code: raw.public_code,
       case_type: raw.case_type,
       full_name: raw.full_name,
+      short_description: raw.short_description,
       public_notes: raw.public_notes,
       public_contact_place: raw.public_contact_place,
       country: raw.country,
       state: raw.state,
       city: raw.city,
       last_helped_at: raw.last_helped_at,
-      situation: raw.situation_categories ?? { id: '', name: '' },
       needs: (raw.case_needs ?? [])
         .filter((n) => !n.deleted_at && n.need_categories !== null)
         .map((n) => ({

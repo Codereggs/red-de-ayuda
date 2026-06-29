@@ -11,7 +11,6 @@ const filtersSchema = z.object({
   search: z.string().trim().max(200).optional(),
   state: z.string().trim().max(100).optional(),
   city: z.string().trim().max(100).optional(),
-  situationId: z.string().uuid().optional(),
   needCategoryId: z.string().uuid().optional(),
   randomSeed: z.string().min(1).max(100).optional(),
 })
@@ -23,7 +22,6 @@ export async function GET(req: NextRequest) {
     search: params.get('search') || undefined,
     state: params.get('state') || undefined,
     city: params.get('city') || undefined,
-    situationId: params.get('situation') || undefined,
     needCategoryId: params.get('need') || undefined,
     randomSeed: params.get('seed') || undefined,
   })

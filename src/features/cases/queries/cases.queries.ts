@@ -14,7 +14,6 @@ export const casesKeys = {
   publicDetail: (id: string) => ['cases', 'public', id] as const,
   privateList: (f: PrivateCaseFilters) => ['cases', 'private', 'list', f] as const,
   privateDetail: (id: string) => ['cases', 'private', id] as const,
-  situationCategories: () => ['cases', 'situation-categories'] as const,
 }
 
 export function usePublicCases(filters: PublicCaseFilters) {
@@ -42,13 +41,5 @@ export function useDashboardCases(filters: PrivateCaseFilters) {
       getRepo().listPrivate({ ...filters, cursor: pageParam as string | undefined }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-  })
-}
-
-export function useSituationCategories() {
-  return useQuery({
-    queryKey: casesKeys.situationCategories(),
-    queryFn: () => getRepo().listSituationCategories(),
-    staleTime: 10 * 60 * 1000,
   })
 }

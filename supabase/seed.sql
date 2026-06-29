@@ -15,9 +15,6 @@ do $$
 declare
   admin_id              uuid;
 
-  -- Situation categories
-  situation_damnificada uuid;
-
   -- Need categories
   need_olmesartan_40    uuid;
   need_olmesartan_20    uuid;
@@ -45,28 +42,6 @@ begin
   if admin_id is null then
     raise exception 'No active admin profile found. Create one in Supabase Auth + profiles table first.';
   end if;
-
-  -- ── Situation categories ─────────────────────────────────────────────────
-  insert into public.situation_categories (name, normalized_name, created_by_user_id)
-  values ('Damnificada', 'damnificada', admin_id)
-  on conflict (normalized_name) do update set name = excluded.name
-  returning id into situation_damnificada;
-
-  insert into public.situation_categories (name, normalized_name, created_by_user_id)
-  values ('Caso médico', 'caso medico', admin_id)
-  on conflict (normalized_name) do nothing;
-
-  insert into public.situation_categories (name, normalized_name, created_by_user_id)
-  values ('Adulto mayor', 'adulto mayor', admin_id)
-  on conflict (normalized_name) do nothing;
-
-  insert into public.situation_categories (name, normalized_name, created_by_user_id)
-  values ('Familia con niños', 'familia con ninos', admin_id)
-  on conflict (normalized_name) do nothing;
-
-  insert into public.situation_categories (name, normalized_name, created_by_user_id)
-  values ('Pérdida de vivienda', 'perdida de vivienda', admin_id)
-  on conflict (normalized_name) do nothing;
 
   -- ── Need categories ───────────────────────────────────────────────────────
   insert into public.need_categories (name, normalized_name, created_by_user_id)
@@ -127,7 +102,7 @@ begin
   insert into public.cases (
     case_type,
     full_name,
-    situation_category_id,
+    short_description,
     public_notes,
     public_contact_place,
     country,
@@ -139,7 +114,7 @@ begin
   ) values (
     'person',
     'Mayreth Izturriaga',
-    situation_damnificada,
+    'Damnificada',
     'Caso registrado para recibir ayuda por situación de damnificada.',
     'Liceo Carlos Fiol, en Marapa Marina',
     'Venezuela',

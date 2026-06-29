@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Search, Loader2, RotateCcw } from 'lucide-react'
-import { usePublicCases, useSituationCategories } from '../queries/cases.queries'
+import { usePublicCases } from '../queries/cases.queries'
 import { useNeedCategories } from '@/features/needs/queries/needs.queries'
 import { PublicCaseCard } from './public-case-card'
 import { HelpModal } from './help-modal'
@@ -19,22 +19,19 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced
 }
 
-export function PublicCaseGrid() {
+export function PublicCaseGrid({ isHelper }: { isHelper: boolean }) {
   const [search, setSearch] = useState('')
   const [state, setState] = useState('')
   const [city, setCity] = useState('')
-  const [situationId, setSituationId] = useState('')
   const [needCategoryId, setNeedCategoryId] = useState('')
   const [randomSeed] = useState(() => Math.random().toString(36).slice(2))
   const debouncedSearch = useDebounce(search, 350)
-  const situationsQuery = useSituationCategories()
   const needCategoriesQuery = useNeedCategories()
 
   const filters: PublicCaseFilters = {
     search: debouncedSearch || undefined,
     state: state || undefined,
     city: city || undefined,
-    situationId: situationId || undefined,
     needCategoryId: needCategoryId || undefined,
     randomSeed,
   }
@@ -69,7 +66,7 @@ export function PublicCaseGrid() {
   return (
     <div className="flex flex-col gap-6">
       {/* Filters */}
-      <div className="bg-card border-border grid grid-cols-1 gap-3 rounded-2xl border p-4 sm:grid-cols-2 lg:grid-cols-7">
+      <div className="bg-card border-border grid grid-cols-1 gap-3 rounded-2xl border p-4 sm:grid-cols-2 lg:grid-cols-6">
         <div className="relative lg:col-span-2">
           <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
           <input
@@ -95,19 +92,6 @@ export function PublicCaseGrid() {
           className="border-input bg-input-background focus-visible:ring-primary/50 w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus-visible:ring-2"
         />
         <select
-          value={situationId}
-          onChange={(event) => setSituationId(event.target.value)}
-          className="border-input bg-input-background focus-visible:ring-primary/50 w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus-visible:ring-2"
-          aria-label="Filtrar por situación"
-        >
-          <option value="">Todas las situaciones</option>
-          {(situationsQuery.data ?? []).map((situation) => (
-            <option key={situation.id} value={situation.id}>
-              {situation.name}
-            </option>
-          ))}
-        </select>
-        <select
           value={needCategoryId}
           onChange={(event) => setNeedCategoryId(event.target.value)}
           className="border-input bg-input-background focus-visible:ring-primary/50 w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus-visible:ring-2"
@@ -126,7 +110,6 @@ export function PublicCaseGrid() {
             setSearch('')
             setState('')
             setCity('')
-            setSituationId('')
             setNeedCategoryId('')
           }}
           className="text-muted-foreground hover:bg-muted hover:text-foreground inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition-colors"
@@ -173,7 +156,13 @@ export function PublicCaseGrid() {
         {isFetchingNextPage && <Loader2 className="text-primary size-5 animate-spin" />}
       </div>
 
-      {helpTarget && <HelpModal caseData={helpTarget} onClose={() => setHelpTarget(null)} />}
+      {helpTarget && (
+        <HelpModal
+          caseData={helpTarget}
+          isHelper={isHelper}
+          onClose={() => setHelpTarget(null)}
+        />
+      )}
     </div>
   )
 }

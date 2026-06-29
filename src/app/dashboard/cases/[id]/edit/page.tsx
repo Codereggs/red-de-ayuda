@@ -19,11 +19,10 @@ export default async function EditCasePage({ params }: EditCasePageProps) {
   const client = await createServerSupabaseClient()
   const repo = createCasesRepository(client)
 
-  const [caseRow, privateData, phones, categories] = await Promise.all([
+  const [caseRow, privateData, phones] = await Promise.all([
     repo.findPrivateById(id),
     repo.findPrivateDataByCaseId(id),
     repo.findPhonesByCaseId(id),
-    repo.listSituationCategories(),
   ])
 
   if (!caseRow) notFound()
@@ -31,7 +30,7 @@ export default async function EditCasePage({ params }: EditCasePageProps) {
   const defaultValues: Partial<CreateOrUpdateCaseValues> = {
     fullName: caseRow.full_name,
     caseType: caseRow.case_type,
-    situationCategoryId: caseRow.situation_category_id,
+    shortDescription: caseRow.short_description,
     publicContactPlace: caseRow.public_contact_place,
     country: caseRow.country,
     state: caseRow.state,
@@ -73,12 +72,7 @@ export default async function EditCasePage({ params }: EditCasePageProps) {
         </p>
       </div>
 
-      <CaseForm
-        action={boundAction}
-        defaultValues={defaultValues}
-        situationCategories={categories}
-        mode="edit"
-      />
+      <CaseForm action={boundAction} defaultValues={defaultValues} mode="edit" />
     </div>
   )
 }

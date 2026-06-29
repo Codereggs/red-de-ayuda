@@ -6,7 +6,6 @@ import type {
   AssistanceMethod,
   HelpRecord,
   NeedCategory,
-  SituationCategory,
 } from '@/shared/types/database.types'
 
 /** Public-safe case data returned by the public API */
@@ -16,6 +15,7 @@ export interface PublicCase extends Pick<
   | 'public_code'
   | 'case_type'
   | 'full_name'
+  | 'short_description'
   | 'public_notes'
   | 'public_contact_place'
   | 'country'
@@ -23,7 +23,6 @@ export interface PublicCase extends Pick<
   | 'city'
   | 'last_helped_at'
 > {
-  situation: Pick<SituationCategory, 'id' | 'name'>
   needs: PublicCaseNeed[]
   helpRecordsCount: number
   lastHelpSummary: string | null
@@ -35,7 +34,6 @@ export interface PublicCaseNeed extends Pick<CaseNeed, 'id' | 'quantity' | 'unit
 
 /** Full case as seen by helpers/admins — includes private data */
 export interface PrivateCase extends Case {
-  situation: SituationCategory
   privateData: CasePrivateData | null
   phones: CasePhone[]
   needs: PrivateCaseNeed[]
@@ -57,7 +55,6 @@ export interface RevealAssistancePayload {
 export interface PublicCaseFilters {
   state?: string
   city?: string
-  situationId?: string
   needCategoryId?: string
   search?: string
   cursor?: string
@@ -97,7 +94,7 @@ interface PhoneInput {
 export interface CreateCaseInput {
   fullName: string
   caseType: 'person' | 'family'
-  situationCategoryId: string
+  shortDescription: string
   publicContactPlace: string
   state: string
   city: string

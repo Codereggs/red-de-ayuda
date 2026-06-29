@@ -1,11 +1,15 @@
 import { APP_NAME } from '@/shared/constants'
 import { PublicCaseGrid } from '@/features/cases/components/public-case-grid'
+import { getSession, isActiveHelperOrAdmin } from '@/shared/lib/auth/get-session'
 
 export const metadata = {
   title: `${APP_NAME} — Registro verificado de ayuda`,
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await getSession()
+  const isHelper = isActiveHelperOrAdmin(session)
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <div className="mb-8">
@@ -17,7 +21,7 @@ export default function HomePage() {
           tras confirmar su uso responsable.
         </p>
       </div>
-      <PublicCaseGrid />
+      <PublicCaseGrid isHelper={isHelper} />
     </main>
   )
 }

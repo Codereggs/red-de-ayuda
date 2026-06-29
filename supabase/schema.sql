@@ -28,17 +28,6 @@ create table if not exists public.profiles (
 -- Auto-expandable by helpers/admins. Deduplicated by normalized_name.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create table if not exists public.situation_categories (
-  id                  uuid        primary key default gen_random_uuid(),
-  name                text        not null,
-  normalized_name     text        not null,
-  created_by_user_id  uuid        references public.profiles(id),
-  created_at          timestamptz not null default now(),
-  updated_at          timestamptz not null default now(),
-  deleted_at          timestamptz,
-  unique (normalized_name)
-);
-
 create table if not exists public.need_categories (
   id                  uuid        primary key default gen_random_uuid(),
   name                text        not null,
@@ -90,7 +79,7 @@ create table if not exists public.cases (
   public_code           text        not null unique default public.generate_case_public_code(),
   case_type             text        not null check (case_type in ('person', 'family')),
   full_name             text        not null,
-  situation_category_id uuid        not null references public.situation_categories(id),
+  short_description     text        not null,
   public_notes          text,
   public_contact_place  text        not null,
   country               text        not null default 'Venezuela',
@@ -375,7 +364,6 @@ declare
 begin
   foreach t in array array[
     'profiles',
-    'situation_categories',
     'need_categories',
     'help_types',
     'cases',

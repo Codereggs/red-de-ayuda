@@ -6,7 +6,7 @@ export const caseTypeSchema = z.enum(CASE_TYPES)
 export const caseFormSchema = z.object({
   caseType: caseTypeSchema,
   fullName: z.string().min(2).max(200),
-  situationCategoryId: z.string().uuid(),
+  shortDescription: z.string().min(2).max(200),
   publicContactPlace: z.string().min(2).max(500),
   country: z.string().min(1).max(100).default('Venezuela'),
   state: z.string().min(1).max(100),

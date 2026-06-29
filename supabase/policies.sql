@@ -7,7 +7,6 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 
 alter table public.profiles                       enable row level security;
-alter table public.situation_categories           enable row level security;
 alter table public.need_categories                enable row level security;
 alter table public.help_types                     enable row level security;
 alter table public.cases                          enable row level security;
@@ -104,18 +103,10 @@ create policy "profiles_admin_all" on public.profiles
   for all using (public.is_admin()) with check (public.is_admin());
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Dynamic catalogs (situation_categories, need_categories, help_types)
+-- Dynamic catalogs (need_categories, help_types)
 -- Public can read active (non-deleted) entries.
 -- Helpers/admins can write.
 -- ─────────────────────────────────────────────────────────────────────────────
-
-drop policy if exists "situation_categories_public_select" on public.situation_categories;
-create policy "situation_categories_public_select" on public.situation_categories
-  for select using (deleted_at is null);
-
-drop policy if exists "situation_categories_internal_write" on public.situation_categories;
-create policy "situation_categories_internal_write" on public.situation_categories
-  for all using (public.is_helper_or_admin()) with check (public.is_helper_or_admin());
 
 drop policy if exists "need_categories_public_select" on public.need_categories;
 create policy "need_categories_public_select" on public.need_categories

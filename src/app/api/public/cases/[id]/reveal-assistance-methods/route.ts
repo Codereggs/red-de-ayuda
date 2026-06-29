@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { z } from 'zod'
+import { getSession, isActiveHelperOrAdmin } from '@/shared/lib/auth/get-session'
 import { createServiceSupabaseClient } from '@/shared/lib/supabase/server'
 import type { Database } from '@/shared/types/database.types'
 import { createCasesRepository } from '@/features/cases/repositories/cases.repository'
@@ -14,6 +15,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   try {
+    const session = await getSession()
+    if (!isActiveHelperOrAdmin(session)) {
+      return Response.json(
+        { error: 'Debes iniciar sesión como helper para ver los datos de contacto.' },
+        { status: 401 },
+      )
+    }
+
     const forwarded = req.headers.get('x-forwarded-for')
     const rawIp = forwarded
       ? forwarded.split(',')[0].trim()

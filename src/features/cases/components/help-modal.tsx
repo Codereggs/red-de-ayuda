@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { X, Phone, Loader2, AlertCircle, Copy, MapPin } from 'lucide-react'
 import { RESPONSIBLE_USE_TEXT } from '@/shared/constants'
 import type { PublicCase, RevealAssistancePayload } from '../types/cases.types'
@@ -9,6 +10,7 @@ import { buildAssistanceMethodCopy } from '../utils/case-copy'
 
 interface HelpModalProps {
   caseData: PublicCase
+  isHelper: boolean
   onClose: () => void
 }
 
@@ -21,7 +23,7 @@ const METHOD_LABELS: Record<AssistanceMethod['type'], string> = {
 
 type Step = 'confirm' | 'loading' | 'revealed' | 'error'
 
-export function HelpModal({ caseData, onClose }: HelpModalProps) {
+export function HelpModal({ caseData, isHelper, onClose }: HelpModalProps) {
   const [step, setStep] = useState<Step>('confirm')
   const [payload, setPayload] = useState<RevealAssistancePayload | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -34,7 +36,11 @@ export function HelpModal({ caseData, onClose }: HelpModalProps) {
       })
       const body = await res.json()
       if (!res.ok) {
-        setErrorMsg(body.error ?? 'Error al obtener los datos.')
+        setErrorMsg(
+          res.status === 401
+            ? 'Debes iniciar sesión como helper para ver los datos de contacto.'
+            : (body.error ?? 'Error al obtener los datos.'),
+        )
         setStep('error')
         return
       }
@@ -83,7 +89,7 @@ export function HelpModal({ caseData, onClose }: HelpModalProps) {
           {step === 'confirm' && (
             <div className="flex flex-col gap-5">
               <div className="bg-muted flex flex-col gap-3 rounded-xl p-4">
-                <p className="text-foreground text-sm font-semibold">{caseData.situation.name}</p>
+                <p className="text-foreground text-sm font-semibold">{caseData.short_description}</p>
                 <p className="text-muted-foreground flex items-start gap-2 text-sm">
                   <MapPin className="mt-0.5 size-4 shrink-0" />
                   {caseData.public_contact_place}
@@ -103,13 +109,27 @@ export function HelpModal({ caseData, onClose }: HelpModalProps) {
                 )}
               </div>
               <p className="text-foreground text-sm leading-relaxed">{RESPONSIBLE_USE_TEXT}</p>
-              <button
-                type="button"
-                onClick={handleConfirm}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 w-full rounded-full py-2.5 font-semibold transition-colors"
-              >
-                Ver datos para ayudar
-              </button>
+              {isHelper ? (
+                <button
+                  type="button"
+                  onClick={handleConfirm}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 w-full rounded-full py-2.5 font-semibold transition-colors"
+                >
+                  Ver datos para ayudar
+                </button>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <p className="text-muted-foreground text-sm">
+                    Debes iniciar sesión como helper para ver los datos de contacto.
+                  </p>
+                  <Link
+                    href="/login"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex w-full items-center justify-center rounded-full py-2.5 text-sm font-semibold transition-colors"
+                  >
+                    Iniciar sesión
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 

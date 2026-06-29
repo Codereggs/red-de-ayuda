@@ -7,23 +7,16 @@ import { Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { createOrUpdateCaseSchema, type CreateOrUpdateCaseValues } from '../schemas/cases.schema'
 import { PhoneFieldArray } from './phone-field-array'
-import type { SituationCategory } from '@/shared/types/database.types'
 import type { ActionResult } from '@/shared/types/action-result'
 import { DEFAULT_COUNTRY } from '@/shared/constants'
 
 interface CaseFormProps {
   action: (data: CreateOrUpdateCaseValues) => Promise<ActionResult<void>>
   defaultValues?: Partial<CreateOrUpdateCaseValues>
-  situationCategories: SituationCategory[]
   mode?: 'create' | 'edit'
 }
 
-export function CaseForm({
-  action,
-  defaultValues,
-  situationCategories,
-  mode = 'create',
-}: CaseFormProps) {
+export function CaseForm({ action, defaultValues, mode = 'create' }: CaseFormProps) {
   const [isPending, startTransition] = useTransition()
 
   const {
@@ -111,21 +104,16 @@ export function CaseForm({
 
           <div className="flex flex-col gap-1">
             <label className="text-foreground text-sm font-medium">
-              Situación <span className="text-destructive">*</span>
+              Descripción corta <span className="text-destructive">*</span>
             </label>
-            <select
-              {...register('situationCategoryId')}
+            <input
+              {...register('shortDescription')}
+              type="text"
+              placeholder="Ej: Damnificada, Caso médico…"
               className="border-input bg-background focus-visible:ring-primary/50 rounded-lg border px-3 py-2 text-sm focus:outline-none focus-visible:ring-2"
-            >
-              <option value="">Seleccionar…</option>
-              {situationCategories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-            {errors.situationCategoryId && (
-              <p className="text-destructive text-xs">{errors.situationCategoryId.message}</p>
+            />
+            {errors.shortDescription && (
+              <p className="text-destructive text-xs">{errors.shortDescription.message}</p>
             )}
           </div>
 

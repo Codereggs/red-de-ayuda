@@ -42,12 +42,11 @@ export default async function CasePage({ params }: CasePageProps) {
   const needsRepo = createNeedsRepository(client)
   const helpRecordsRepo = createHelpRecordsRepository(client)
 
-  const [caseRow, privateData, phones, categories, needs, needCategories, helpRecords, helpTypes] =
+  const [caseRow, privateData, phones, needs, needCategories, helpRecords, helpTypes] =
     await Promise.all([
       repo.findPrivateById(id),
       repo.findPrivateDataByCaseId(id),
       repo.findPhonesByCaseId(id),
-      repo.listSituationCategories(),
       needsRepo.listByCaseId(id),
       needsRepo.listCategories(),
       helpRecordsRepo.listPrivateByCaseId(id),
@@ -55,8 +54,6 @@ export default async function CasePage({ params }: CasePageProps) {
     ])
 
   if (!caseRow) notFound()
-
-  const situation = categories.find((c) => c.id === caseRow.situation_category_id)
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
       <Link
@@ -105,7 +102,7 @@ export default async function CasePage({ params }: CasePageProps) {
             Información pública
           </h2>
           <dl className="grid grid-cols-2 gap-x-4 gap-y-4">
-            <InfoRow label="Situación" value={situation?.name ?? null} />
+            <InfoRow label="Descripción corta" value={caseRow.short_description} />
             <InfoRow label="País" value={caseRow.country} />
             <InfoRow label="Estado" value={caseRow.state} />
             <InfoRow label="Ciudad" value={caseRow.city} />

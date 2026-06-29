@@ -31,3 +31,12 @@ export async function getSession(): Promise<Session | null> {
 
   return { user, profile }
 }
+
+/** True when the session belongs to an active helper or admin. */
+export function isActiveHelperOrAdmin(session: Session | null): session is Session {
+  if (!session) return false
+  return (
+    session.profile.status === 'active' &&
+    (session.profile.role === 'helper' || session.profile.role === 'admin')
+  )
+}

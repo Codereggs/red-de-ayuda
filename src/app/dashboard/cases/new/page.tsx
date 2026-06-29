@@ -1,17 +1,11 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { requireAuth } from '@/shared/lib/auth/guards'
-import { createServerSupabaseClient } from '@/shared/lib/supabase/server'
-import { createCasesRepository } from '@/features/cases/repositories/cases.repository'
 import { CaseForm } from '@/features/cases/components/case-form'
 import { createCaseAction } from '@/features/cases/actions/cases.actions'
 
 export default async function NewCasePage() {
   await requireAuth()
-
-  const client = await createServerSupabaseClient()
-  const repo = createCasesRepository(client)
-  const situationCategories = await repo.listSituationCategories()
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
@@ -30,7 +24,7 @@ export default async function NewCasePage() {
         </p>
       </div>
 
-      <CaseForm action={createCaseAction} situationCategories={situationCategories} mode="create" />
+      <CaseForm action={createCaseAction} mode="create" />
     </div>
   )
 }

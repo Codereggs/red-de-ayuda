@@ -58,9 +58,6 @@ export function PublicCaseCard({ case: c, search, onHelp }: PublicCaseCardProps)
             </h3>
           </Link>
         </div>
-        <span className="bg-secondary/60 text-secondary-foreground shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold">
-          {c.situation.name}
-        </span>
       </div>
 
       <p className="text-muted-foreground text-xs">

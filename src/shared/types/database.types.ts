@@ -36,34 +36,6 @@ export type Database = {
         Relationships: []
       }
 
-      situation_categories: {
-        Row: {
-          id: string
-          name: string
-          normalized_name: string
-          created_by_user_id: string | null
-          created_at: string
-          updated_at: string
-          deleted_at: string | null
-        }
-        Insert: {
-          id?: string
-          name: string
-          normalized_name: string
-          created_by_user_id?: string | null
-          created_at?: string
-          updated_at?: string
-          deleted_at?: string | null
-        }
-        Update: {
-          name?: string
-          normalized_name?: string
-          deleted_at?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-
       need_categories: {
         Row: {
           id: string
@@ -126,7 +98,7 @@ export type Database = {
           public_code: string
           case_type: 'person' | 'family'
           full_name: string
-          situation_category_id: string
+          short_description: string
           public_notes: string | null
           public_contact_place: string
           country: string
@@ -150,7 +122,7 @@ export type Database = {
           public_code?: string
           case_type: 'person' | 'family'
           full_name: string
-          situation_category_id: string
+          short_description: string
           public_notes?: string | null
           public_contact_place: string
           country?: string
@@ -171,7 +143,7 @@ export type Database = {
         Update: {
           case_type?: 'person' | 'family'
           full_name?: string
-          situation_category_id?: string
+          short_description?: string
           public_notes?: string | null
           public_contact_place?: string
           country?: string
@@ -513,7 +485,6 @@ export type AssistanceMethod = Database['public']['Tables']['assistance_methods'
 export type CaseNeed = Database['public']['Tables']['case_needs']['Row']
 export type HelpRecord = Database['public']['Tables']['help_records']['Row']
 export type HelpRecordNeed = Database['public']['Tables']['help_record_needs']['Row']
-export type SituationCategory = Database['public']['Tables']['situation_categories']['Row']
 export type NeedCategory = Database['public']['Tables']['need_categories']['Row']
 export type HelpType = Database['public']['Tables']['help_types']['Row']
 export type AssistanceMethodAccessLog =

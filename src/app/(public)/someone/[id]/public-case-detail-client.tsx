@@ -11,6 +11,7 @@ import type { PublicHelpRecord } from '@/features/help-records/types/help-record
 interface PublicCaseDetailClientProps {
   case: PublicCase
   helpRecords: PublicHelpRecord[]
+  isHelper: boolean
 }
 
 function formatDate(dateStr: string) {
@@ -21,7 +22,11 @@ function formatDate(dateStr: string) {
   })
 }
 
-export function PublicCaseDetailClient({ case: c, helpRecords }: PublicCaseDetailClientProps) {
+export function PublicCaseDetailClient({
+  case: c,
+  helpRecords,
+  isHelper,
+}: PublicCaseDetailClientProps) {
   const [showHelp, setShowHelp] = useState(false)
 
   async function copyCard() {
@@ -41,7 +46,7 @@ export function PublicCaseDetailClient({ case: c, helpRecords }: PublicCaseDetai
               </h1>
             </div>
             <span className="bg-secondary/60 text-secondary-foreground rounded-full px-3 py-1.5 text-sm font-semibold">
-              {c.situation.name}
+              {c.short_description}
             </span>
           </div>
 
@@ -141,7 +146,9 @@ export function PublicCaseDetailClient({ case: c, helpRecords }: PublicCaseDetai
         </div>
       </article>
 
-      {showHelp && <HelpModal caseData={c} onClose={() => setShowHelp(false)} />}
+      {showHelp && (
+        <HelpModal caseData={c} isHelper={isHelper} onClose={() => setShowHelp(false)} />
+      )}
     </>
   )
 }
