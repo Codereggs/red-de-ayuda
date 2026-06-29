@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { createServerSupabaseClient } from '@/shared/lib/supabase/server'
 import { createCasesRepository } from '@/features/cases/repositories/cases.repository'
+import { createHelpRecordsRepository } from '@/features/help-records/repositories/help-records.repository'
 import { notFound } from 'next/navigation'
 import { PublicCaseDetailClient } from './public-case-detail-client'
 
@@ -14,7 +15,11 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
 
   const client = await createServerSupabaseClient()
   const repo = createCasesRepository(client)
-  const caseData = await repo.findPublicById(id)
+  const helpRecordsRepo = createHelpRecordsRepository(client)
+  const [caseData, helpRecords] = await Promise.all([
+    repo.findPublicById(id),
+    helpRecordsRepo.listPublicByCaseId(id),
+  ])
 
   if (!caseData) notFound()
 
@@ -28,7 +33,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
         Volver al listado
       </Link>
 
-      <PublicCaseDetailClient case={caseData} />
+      <PublicCaseDetailClient case={caseData} helpRecords={helpRecords} />
     </main>
   )
 }

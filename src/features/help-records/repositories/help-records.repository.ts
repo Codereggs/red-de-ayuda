@@ -7,7 +7,7 @@ import type {
 } from '../types/help-records.types'
 import { normalizeText } from '@/shared/utils/normalize-text'
 
-type DBClient = SupabaseClient<Database>
+type DBClient = Pick<SupabaseClient<Database>, 'from'>
 type HelpTypeRow = Database['public']['Tables']['help_types']['Row']
 type HelpRecordRow = Database['public']['Tables']['help_records']['Row']
 
@@ -66,24 +66,46 @@ export class HelpRecordsRepository {
 
     if (error) throw new Error(`[HelpRecordsRepository.listPrivateByCaseId] ${error.message}`)
 
-    return ((data ?? []) as unknown as RawPrivateHelpRecord[])
-      .filter((row) => row.help_types !== null)
-      .map((row) => ({
-        id: row.id,
-        case_id: row.case_id,
-        help_type_id: row.help_type_id,
-        created_by_user_id: row.created_by_user_id,
-        title: row.title,
-        description: row.description,
-        amount_usd: row.amount_usd,
-        helped_at: row.helped_at,
-        private_notes: row.private_notes,
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-        deleted_at: row.deleted_at,
-        helpType: row.help_types!,
-        caseNeedIds: row.help_record_needs.map((hrn) => hrn.case_need_id),
-      }))
+    const rows = ((data ?? []) as unknown as RawPrivateHelpRecord[]).filter(
+      (row) => row.help_types !== null,
+    )
+    const creatorIds = [
+      ...new Set(rows.map((row) => row.created_by_user_id).filter((id): id is string => !!id)),
+    ]
+    const creators = new Map<string, { fullName: string; email: string }>()
+
+    if (creatorIds.length > 0) {
+      const { data: profiles, error: profilesError } = await this.db
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', creatorIds)
+      if (profilesError) {
+        throw new Error(
+          `[HelpRecordsRepository.listPrivateByCaseId - profiles] ${profilesError.message}`,
+        )
+      }
+      for (const profile of profiles ?? []) {
+        creators.set(profile.id, { fullName: profile.full_name, email: profile.email })
+      }
+    }
+
+    return rows.map((row) => ({
+      id: row.id,
+      case_id: row.case_id,
+      help_type_id: row.help_type_id,
+      created_by_user_id: row.created_by_user_id,
+      title: row.title,
+      description: row.description,
+      amount_usd: row.amount_usd,
+      helped_at: row.helped_at,
+      private_notes: row.private_notes,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      deleted_at: row.deleted_at,
+      helpType: row.help_types!,
+      caseNeedIds: row.help_record_needs.map((hrn) => hrn.case_need_id),
+      createdBy: row.created_by_user_id ? (creators.get(row.created_by_user_id) ?? null) : null,
+    }))
   }
 
   async listHelpTypes(): Promise<HelpTypeRow[]> {
@@ -103,7 +125,12 @@ export class HelpRecordsRepository {
     const { data, error } = await this.db
       .from('help_types')
       .upsert(
-        { name, normalized_name: normalized, created_by_user_id: createdByUserId, deleted_at: null },
+        {
+          name,
+          normalized_name: normalized,
+          created_by_user_id: createdByUserId,
+          deleted_at: null,
+        },
         { onConflict: 'normalized_name' },
       )
       .select('*')
@@ -115,6 +142,21 @@ export class HelpRecordsRepository {
   }
 
   async create(input: CreateHelpRecordInput): Promise<HelpRecordWithType> {
+    const uniqueNeedIds = [...new Set(input.caseNeedIds)]
+    const { data: validNeeds, error: validNeedsError } = await this.db
+      .from('case_needs')
+      .select('id')
+      .eq('case_id', input.caseId)
+      .in('id', uniqueNeedIds)
+      .is('deleted_at', null)
+
+    if (validNeedsError) {
+      throw new Error(`[HelpRecordsRepository.create - validate needs] ${validNeedsError.message}`)
+    }
+    if ((validNeeds ?? []).length !== uniqueNeedIds.length) {
+      throw new Error('[HelpRecordsRepository.create] One or more needs do not belong to the case')
+    }
+
     // Insert help_record and eagerly join help_types in one round-trip
     const { data: recordData, error: recordError } = await this.db
       .from('help_records')
@@ -137,9 +179,9 @@ export class HelpRecordsRepository {
     const rawRecord = recordData as unknown as RawPrivateHelpRecord
 
     // Insert help_record_needs associations (not transactional — MVP accepted risk)
-    if (input.caseNeedIds.length > 0) {
+    if (uniqueNeedIds.length > 0) {
       const { error: needsError } = await this.db.from('help_record_needs').insert(
-        input.caseNeedIds.map((caseNeedId) => ({
+        uniqueNeedIds.map((caseNeedId) => ({
           help_record_id: rawRecord.id,
           case_need_id: caseNeedId,
         })),
@@ -163,17 +205,23 @@ export class HelpRecordsRepository {
       updated_at: rawRecord.updated_at,
       deleted_at: rawRecord.deleted_at,
       helpType: rawRecord.help_types!,
-      caseNeedIds: input.caseNeedIds,
+      caseNeedIds: uniqueNeedIds,
+      createdBy: null,
     }
   }
 
-  async softDelete(recordId: string): Promise<void> {
-    const { error } = await this.db
+  async softDelete(caseId: string, recordId: string): Promise<void> {
+    const { data, error } = await this.db
       .from('help_records')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', recordId)
+      .eq('case_id', caseId)
+      .is('deleted_at', null)
+      .select('id')
+      .single()
 
     if (error) throw new Error(`[HelpRecordsRepository.softDelete] ${error.message}`)
+    if (!data) throw new Error('[HelpRecordsRepository.softDelete] No data returned')
   }
 }
 

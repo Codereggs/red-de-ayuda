@@ -4,6 +4,7 @@ export interface HelpRecordWithType extends HelpRecord {
   helpType: HelpType
   /** IDs of case_needs this record is associated with */
   caseNeedIds: string[]
+  createdBy: { fullName: string; email: string } | null
 }
 
 /** Public-safe view — no helper identity, no private notes */

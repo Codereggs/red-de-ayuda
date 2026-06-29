@@ -7,6 +7,8 @@ import { createCasesRepository } from '@/features/cases/repositories/cases.repos
 import { StatusBadge, CaseTypeBadge } from '@/features/cases/components/status-badge'
 import { createNeedsRepository } from '@/features/needs/repositories/needs.repository'
 import { NeedsManager } from '@/features/needs/components/needs-manager'
+import { createHelpRecordsRepository } from '@/features/help-records/repositories/help-records.repository'
+import { HelpRecordsManager } from '@/features/help-records/components/help-records-manager'
 import { CaseArchiveButton } from './case-archive-button'
 
 interface CasePageProps {
@@ -38,15 +40,19 @@ export default async function CasePage({ params }: CasePageProps) {
   const client = await createServerSupabaseClient()
   const repo = createCasesRepository(client)
   const needsRepo = createNeedsRepository(client)
+  const helpRecordsRepo = createHelpRecordsRepository(client)
 
-  const [caseRow, privateData, phones, categories, needs, needCategories] = await Promise.all([
-    repo.findPrivateById(id),
-    repo.findPrivateDataByCaseId(id),
-    repo.findPhonesByCaseId(id),
-    repo.listSituationCategories(),
-    needsRepo.listByCaseId(id),
-    needsRepo.listCategories(),
-  ])
+  const [caseRow, privateData, phones, categories, needs, needCategories, helpRecords, helpTypes] =
+    await Promise.all([
+      repo.findPrivateById(id),
+      repo.findPrivateDataByCaseId(id),
+      repo.findPhonesByCaseId(id),
+      repo.listSituationCategories(),
+      needsRepo.listByCaseId(id),
+      needsRepo.listCategories(),
+      helpRecordsRepo.listPrivateByCaseId(id),
+      helpRecordsRepo.listHelpTypes(),
+    ])
 
   if (!caseRow) notFound()
 
@@ -171,6 +177,14 @@ export default async function CasePage({ params }: CasePageProps) {
           readOnly={caseRow.status === 'archived'}
         />
       </div>
+
+      <HelpRecordsManager
+        caseId={id}
+        initialRecords={helpRecords}
+        initialHelpTypes={helpTypes}
+        needs={needs}
+        readOnly={caseRow.status === 'archived'}
+      />
 
       {caseRow.status === 'archived' && caseRow.archive_reason && (
         <div className="bg-card border-border mt-6 rounded-2xl border p-6">

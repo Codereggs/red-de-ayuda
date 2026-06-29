@@ -5,9 +5,12 @@ import { MapPin, Calendar, Users, Copy } from 'lucide-react'
 import type { PublicCase } from '@/features/cases/types/cases.types'
 import { HelpModal } from '@/features/cases/components/help-modal'
 import { buildPublicCaseCopy } from '@/features/cases/utils/case-copy'
+import { PublicHelpHistory } from '@/features/help-records/components/public-help-history'
+import type { PublicHelpRecord } from '@/features/help-records/types/help-records.types'
 
 interface PublicCaseDetailClientProps {
   case: PublicCase
+  helpRecords: PublicHelpRecord[]
 }
 
 function formatDate(dateStr: string) {
@@ -18,7 +21,7 @@ function formatDate(dateStr: string) {
   })
 }
 
-export function PublicCaseDetailClient({ case: c }: PublicCaseDetailClientProps) {
+export function PublicCaseDetailClient({ case: c, helpRecords }: PublicCaseDetailClientProps) {
   const [showHelp, setShowHelp] = useState(false)
 
   async function copyCard() {
@@ -97,6 +100,8 @@ export function PublicCaseDetailClient({ case: c }: PublicCaseDetailClientProps)
             </ul>
           </div>
         )}
+
+        <PublicHelpHistory records={helpRecords} />
 
         {/* CTA */}
         <div className="bg-card border-border flex flex-col items-start justify-between gap-4 rounded-2xl border p-6 sm:flex-row sm:items-center">
