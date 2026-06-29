@@ -12,8 +12,7 @@ export default async function LoginPage() {
     <div className="bg-card border border-border rounded-2xl p-8 w-full max-w-sm">
       <div className="mb-8">
         <h1
-          className="text-2xl font-medium text-foreground"
-          style={{ fontFamily: 'var(--font-display)' }}
+          className="font-display text-2xl font-medium text-foreground"
         >
           Iniciar sesión
         </h1>
