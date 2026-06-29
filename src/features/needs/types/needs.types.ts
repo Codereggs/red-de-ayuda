@@ -10,6 +10,7 @@ export interface CreateCaseNeedInput {
   quantity: number
   unit?: string
   comments?: string
+  createdByUserId: string
 }
 
 export interface UpdateCaseNeedInput {

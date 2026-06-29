@@ -8,15 +8,45 @@ export class UsersRepository {
   constructor(private readonly db: DBClient) {}
 
   async listAll(): Promise<Profile[]> {
-    throw new Error('Not implemented')
+    const { data, error } = await this.db
+      .from('profiles')
+      .select('*')
+      .order('full_name')
+
+    if (error) throw new Error(`[UsersRepository.listAll] ${error.message}`)
+    return (data ?? []) as Profile[]
   }
 
-  async findById(_userId: string): Promise<Profile | null> {
-    throw new Error('Not implemented')
+  async findById(userId: string): Promise<Profile | null> {
+    const { data, error } = await this.db
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (error?.code === 'PGRST116') return null
+    if (error) throw new Error(`[UsersRepository.findById] ${error.message}`)
+    return data as Profile | null
   }
 
-  async update(_input: UpdateProfileInput): Promise<Profile> {
-    throw new Error('Not implemented')
+  async update(input: UpdateProfileInput): Promise<Profile> {
+    const { userId, fullName, ...rest } = input
+
+    const payload: Database['public']['Tables']['profiles']['Update'] = {
+      ...rest,
+      ...(fullName !== undefined && { full_name: fullName }),
+    }
+
+    const { data, error } = await this.db
+      .from('profiles')
+      .update(payload)
+      .eq('id', userId)
+      .select('*')
+      .single()
+
+    if (error) throw new Error(`[UsersRepository.update] ${error.message}`)
+    if (!data) throw new Error('[UsersRepository.update] No data returned')
+    return data as Profile
   }
 }
 

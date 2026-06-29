@@ -20,6 +20,7 @@ export interface PublicHelpRecord {
 export interface CreateHelpRecordInput {
   caseId: string
   helpTypeId: string
+  createdByUserId: string
   title: string
   description?: string
   amountUsd?: number

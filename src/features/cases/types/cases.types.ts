@@ -74,5 +74,6 @@ export interface PrivateCaseFilters extends PublicCaseFilters {
 /** Input for archiving a case */
 export interface ArchiveCaseInput {
   caseId: string
+  archivedByUserId: string
   archiveReason: string
 }
