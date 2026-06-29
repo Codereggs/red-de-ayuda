@@ -33,6 +33,7 @@ export type Database = {
           status?: 'active' | 'inactive'
           updated_at?: string
         }
+        Relationships: []
       }
 
       situation_categories: {
@@ -60,6 +61,7 @@ export type Database = {
           deleted_at?: string | null
           updated_at?: string
         }
+        Relationships: []
       }
 
       need_categories: {
@@ -87,6 +89,7 @@ export type Database = {
           deleted_at?: string | null
           updated_at?: string
         }
+        Relationships: []
       }
 
       help_types: {
@@ -114,6 +117,7 @@ export type Database = {
           deleted_at?: string | null
           updated_at?: string
         }
+        Relationships: []
       }
 
       cases: {
@@ -182,6 +186,7 @@ export type Database = {
           deleted_at?: string | null
           updated_at?: string
         }
+        Relationships: []
       }
 
       case_private_data: {
@@ -221,6 +226,7 @@ export type Database = {
           deleted_at?: string | null
           updated_at?: string
         }
+        Relationships: []
       }
 
       case_phones: {
@@ -251,6 +257,7 @@ export type Database = {
           deleted_at?: string | null
           updated_at?: string
         }
+        Relationships: []
       }
 
       assistance_methods: {
@@ -311,6 +318,7 @@ export type Database = {
           deleted_at?: string | null
           updated_at?: string
         }
+        Relationships: []
       }
 
       case_needs: {
@@ -346,6 +354,7 @@ export type Database = {
           deleted_at?: string | null
           updated_at?: string
         }
+        Relationships: []
       }
 
       help_records: {
@@ -388,6 +397,7 @@ export type Database = {
           deleted_at?: string | null
           updated_at?: string
         }
+        Relationships: []
       }
 
       help_record_needs: {
@@ -404,6 +414,7 @@ export type Database = {
           created_at?: string
         }
         Update: Record<string, never>
+        Relationships: []
       }
 
       assistance_method_access_logs: {
@@ -426,6 +437,7 @@ export type Database = {
           created_at?: string
         }
         Update: Record<string, never>
+        Relationships: []
       }
 
       audit_logs: {
@@ -452,6 +464,7 @@ export type Database = {
           created_at?: string
         }
         Update: Record<string, never>
+        Relationships: []
       }
 
       webhook_events: {
@@ -482,6 +495,7 @@ export type Database = {
           last_error?: string | null
           updated_at?: string
         }
+        Relationships: []
       }
     }
     Views: Record<string, never>

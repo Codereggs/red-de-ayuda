@@ -24,9 +24,7 @@ export const casePrivateDataSchema = z.object({
 })
 
 export const casePhoneSchema = z.object({
-  phone: z
-    .string()
-    .regex(/^0\d{10}$/, 'Formato venezolano requerido: 04XX-XXXXXXX'),
+  phone: z.string().regex(/^0\d{10}$/, 'Formato venezolano requerido: 04XX-XXXXXXX'),
   label: z.string().max(100).optional(),
   isPrimary: z.boolean().default(false),
 })
@@ -35,7 +33,13 @@ export const archiveCaseSchema = z.object({
   archiveReason: z.string().min(10, 'El motivo debe tener al menos 10 caracteres').max(500),
 })
 
+export const createOrUpdateCaseSchema = caseFormSchema.extend({
+  privateData: casePrivateDataSchema,
+  phones: z.array(casePhoneSchema).min(1, 'Se requiere al menos un teléfono de contacto'),
+})
+
 export type CaseFormValues = z.infer<typeof caseFormSchema>
 export type CasePrivateDataValues = z.infer<typeof casePrivateDataSchema>
 export type CasePhoneValues = z.infer<typeof casePhoneSchema>
 export type ArchiveCaseValues = z.infer<typeof archiveCaseSchema>
+export type CreateOrUpdateCaseValues = z.infer<typeof createOrUpdateCaseSchema>
