@@ -1,18 +1,12 @@
 import Link from 'next/link'
-import { HeartHandshake } from 'lucide-react'
-import { APP_NAME } from '@/shared/constants'
+import { AppLogo } from '@/shared/components/app-logo'
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-background flex min-h-screen flex-col">
       <header className="bg-background/90 border-border sticky top-0 z-30 border-b backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-          <Link href="/" className="text-foreground flex items-center gap-2">
-            <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-full">
-              <HeartHandshake className="size-5" />
-            </span>
-            <span className="font-display text-lg font-medium">{APP_NAME}</span>
-          </Link>
+          <AppLogo />
           <Link
             href="/login"
             className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-full px-4 py-2 text-sm font-semibold transition-colors"
