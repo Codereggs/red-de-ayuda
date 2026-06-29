@@ -5,6 +5,8 @@ import { requireAuth } from '@/shared/lib/auth/guards'
 import { createServerSupabaseClient } from '@/shared/lib/supabase/server'
 import { createCasesRepository } from '@/features/cases/repositories/cases.repository'
 import { StatusBadge, CaseTypeBadge } from '@/features/cases/components/status-badge'
+import { createNeedsRepository } from '@/features/needs/repositories/needs.repository'
+import { NeedsManager } from '@/features/needs/components/needs-manager'
 import { CaseArchiveButton } from './case-archive-button'
 
 interface CasePageProps {
@@ -35,12 +37,15 @@ export default async function CasePage({ params }: CasePageProps) {
 
   const client = await createServerSupabaseClient()
   const repo = createCasesRepository(client)
+  const needsRepo = createNeedsRepository(client)
 
-  const [caseRow, privateData, phones, categories] = await Promise.all([
+  const [caseRow, privateData, phones, categories, needs, needCategories] = await Promise.all([
     repo.findPrivateById(id),
     repo.findPrivateDataByCaseId(id),
     repo.findPhonesByCaseId(id),
     repo.listSituationCategories(),
+    needsRepo.listByCaseId(id),
+    needsRepo.listCategories(),
   ])
 
   if (!caseRow) notFound()
@@ -159,12 +164,12 @@ export default async function CasePage({ params }: CasePageProps) {
           )}
         </section>
 
-        <section className="bg-card border-border rounded-2xl border p-6">
-          <h2 className="font-display text-foreground mb-1 text-base font-medium">
-            Necesidades y asistencia
-          </h2>
-          <p className="text-muted-foreground text-sm">Próximamente.</p>
-        </section>
+        <NeedsManager
+          caseId={id}
+          initialNeeds={needs}
+          initialCategories={needCategories}
+          readOnly={caseRow.status === 'archived'}
+        />
       </div>
 
       {caseRow.status === 'archived' && caseRow.archive_reason && (

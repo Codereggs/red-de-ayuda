@@ -14,7 +14,9 @@ export interface CreateCaseNeedInput {
 }
 
 export interface UpdateCaseNeedInput {
+  caseId: string
   needId: string
+  needCategoryId?: string
   quantity?: number
   unit?: string | null
   comments?: string | null

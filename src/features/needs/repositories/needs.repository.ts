@@ -1,9 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/shared/types/database.types'
-import type { CaseNeedWithCategory, CreateCaseNeedInput, UpdateCaseNeedInput } from '../types/needs.types'
+import type {
+  CaseNeedWithCategory,
+  CreateCaseNeedInput,
+  UpdateCaseNeedInput,
+} from '../types/needs.types'
 import { normalizeText } from '@/shared/utils/normalize-text'
 
-type DBClient = SupabaseClient<Database>
+type DBClient = Pick<SupabaseClient<Database>, 'from'>
 type NeedCategoryRow = Database['public']['Tables']['need_categories']['Row']
 
 type RawCaseNeed = {
@@ -67,7 +71,12 @@ export class NeedsRepository {
     const { data, error } = await this.db
       .from('need_categories')
       .upsert(
-        { name, normalized_name: normalized, created_by_user_id: createdByUserId, deleted_at: null },
+        {
+          name,
+          normalized_name: normalized,
+          created_by_user_id: createdByUserId,
+          deleted_at: null,
+        },
         { onConflict: 'normalized_name' },
       )
       .select('*')
@@ -117,6 +126,9 @@ export class NeedsRepository {
     const { needId, ...updates } = input
 
     const payload: Database['public']['Tables']['case_needs']['Update'] = {}
+    if (updates.needCategoryId !== undefined) {
+      payload.need_category_id = updates.needCategoryId
+    }
     if (updates.quantity !== undefined) payload.quantity = updates.quantity
     if (updates.unit !== undefined) payload.unit = updates.unit
     if (updates.comments !== undefined) payload.comments = updates.comments
@@ -125,6 +137,7 @@ export class NeedsRepository {
       .from('case_needs')
       .update(payload)
       .eq('id', needId)
+      .eq('case_id', input.caseId)
       .is('deleted_at', null)
       .select('*, need_categories(*)')
       .single()
@@ -150,13 +163,18 @@ export class NeedsRepository {
     }
   }
 
-  async softDelete(needId: string): Promise<void> {
-    const { error } = await this.db
+  async softDelete(caseId: string, needId: string): Promise<void> {
+    const { data, error } = await this.db
       .from('case_needs')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', needId)
+      .eq('case_id', caseId)
+      .is('deleted_at', null)
+      .select('id')
+      .single()
 
     if (error) throw new Error(`[NeedsRepository.softDelete] ${error.message}`)
+    if (!data) throw new Error('[NeedsRepository.softDelete] No data returned')
   }
 }
 
