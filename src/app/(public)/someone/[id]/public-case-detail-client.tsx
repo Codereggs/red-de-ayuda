@@ -14,7 +14,7 @@ interface PublicCaseDetailClientProps {
 }
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('es-VE', {
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString('es-VE', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -77,6 +77,16 @@ export function PublicCaseDetailClient({ case: c, helpRecords }: PublicCaseDetai
             <p className="text-foreground text-sm leading-relaxed">{c.public_notes}</p>
           </div>
         )}
+
+        <div className="bg-card border-border rounded-2xl border p-6">
+          <h2 className="font-display text-foreground mb-2 text-base font-medium">
+            Lugar de contacto
+          </h2>
+          <p className="text-foreground flex items-start gap-2 text-sm leading-relaxed">
+            <MapPin className="text-primary mt-0.5 size-4 shrink-0" />
+            {c.public_contact_place}
+          </p>
+        </div>
 
         {/* Necesidades */}
         {c.needs.length > 0 && (

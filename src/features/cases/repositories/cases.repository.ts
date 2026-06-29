@@ -76,8 +76,8 @@ export class CasesRepository {
       .is('archived_at', null)
       .is('deleted_at', null)
 
-    if (filters.state) query = query.eq('state', filters.state)
-    if (filters.city) query = query.eq('city', filters.city)
+    if (filters.state) query = query.ilike('state', filters.state)
+    if (filters.city) query = query.ilike('city', filters.city)
     if (filters.situationId) query = query.eq('situation_category_id', filters.situationId)
     if (filters.search) {
       const search = filters.search.replace(/[%_,()]/g, ' ').trim()
@@ -101,11 +101,14 @@ export class CasesRepository {
     const rows = (data ?? []) as unknown as RawPublicCase[]
     const hasMore = rows.length > PAGE_SIZE
     const pageRows = hasMore ? rows.slice(0, PAGE_SIZE) : rows
+    const orderedRows = filters.randomSeed
+      ? this.randomizeWithinPriorityGroups(pageRows, filters.randomSeed)
+      : pageRows
 
-    const countMap = await this.batchHelpRecordCounts(pageRows.map((r) => r.id))
+    const countMap = await this.batchHelpRecordCounts(orderedRows.map((r) => r.id))
 
     return {
-      data: pageRows.map((row) => this.toPublicCase(row, countMap.get(row.id) ?? 0)),
+      data: orderedRows.map((row) => this.toPublicCase(row, countMap.get(row.id) ?? 0)),
       nextCursor: hasMore ? encodeCursor(offset + PAGE_SIZE) : null,
       hasMore,
     }
@@ -507,6 +510,24 @@ export class CasesRepository {
       helpRecordsCount,
       lastHelpSummary: null,
     }
+  }
+
+  private randomizeWithinPriorityGroups(rows: RawPublicCase[], seed: string): RawPublicCase[] {
+    const score = (value: string) => {
+      let hash = 2166136261
+      for (const character of `${seed}:${value}`) {
+        hash ^= character.charCodeAt(0)
+        hash = Math.imul(hash, 16777619)
+      }
+      return hash >>> 0
+    }
+
+    return [...rows].sort((a, b) => {
+      const priorityA = a.last_helped_at ?? ''
+      const priorityB = b.last_helped_at ?? ''
+      if (priorityA !== priorityB) return priorityA.localeCompare(priorityB)
+      return score(a.id) - score(b.id)
+    })
   }
 }
 

@@ -61,6 +61,7 @@ export interface PublicCaseFilters {
   needCategoryId?: string
   search?: string
   cursor?: string
+  randomSeed?: string
 }
 
 /** Filters for the private (dashboard) case list */

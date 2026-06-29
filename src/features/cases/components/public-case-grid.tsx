@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Search, Loader2 } from 'lucide-react'
-import { usePublicCases } from '../queries/cases.queries'
+import { Search, Loader2, RotateCcw } from 'lucide-react'
+import { usePublicCases, useSituationCategories } from '../queries/cases.queries'
+import { useNeedCategories } from '@/features/needs/queries/needs.queries'
 import { PublicCaseCard } from './public-case-card'
 import { HelpModal } from './help-modal'
 import type { PublicCaseFilters, PublicCase } from '../types/cases.types'
@@ -22,12 +23,20 @@ export function PublicCaseGrid() {
   const [search, setSearch] = useState('')
   const [state, setState] = useState('')
   const [city, setCity] = useState('')
+  const [situationId, setSituationId] = useState('')
+  const [needCategoryId, setNeedCategoryId] = useState('')
+  const [randomSeed] = useState(() => Math.random().toString(36).slice(2))
   const debouncedSearch = useDebounce(search, 350)
+  const situationsQuery = useSituationCategories()
+  const needCategoriesQuery = useNeedCategories()
 
   const filters: PublicCaseFilters = {
     search: debouncedSearch || undefined,
     state: state || undefined,
     city: city || undefined,
+    situationId: situationId || undefined,
+    needCategoryId: needCategoryId || undefined,
+    randomSeed,
   }
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } =
@@ -60,15 +69,15 @@ export function PublicCaseGrid() {
   return (
     <div className="flex flex-col gap-6">
       {/* Filters */}
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <div className="relative flex-1">
+      <div className="bg-card border-border grid grid-cols-1 gap-3 rounded-2xl border p-4 sm:grid-cols-2 lg:grid-cols-7">
+        <div className="relative lg:col-span-2">
           <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
           <input
             type="search"
-            placeholder="Buscar por nombre…"
+            placeholder="Buscar por nombre o ubicación…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="border-input bg-background focus-visible:ring-primary/50 w-full rounded-xl border py-2 pr-4 pl-9 text-sm focus:outline-none focus-visible:ring-2"
+            className="border-input bg-input-background focus-visible:ring-primary/50 w-full rounded-xl border py-2.5 pr-4 pl-9 text-sm focus:outline-none focus-visible:ring-2"
           />
         </div>
         <input
@@ -76,15 +85,55 @@ export function PublicCaseGrid() {
           placeholder="Estado"
           value={state}
           onChange={(e) => setState(e.target.value)}
-          className="border-input bg-background focus-visible:ring-primary/50 w-full rounded-xl border px-4 py-2 text-sm focus:outline-none focus-visible:ring-2 sm:w-40"
+          className="border-input bg-input-background focus-visible:ring-primary/50 w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus-visible:ring-2"
         />
         <input
           type="text"
           placeholder="Ciudad"
           value={city}
           onChange={(e) => setCity(e.target.value)}
-          className="border-input bg-background focus-visible:ring-primary/50 w-full rounded-xl border px-4 py-2 text-sm focus:outline-none focus-visible:ring-2 sm:w-40"
+          className="border-input bg-input-background focus-visible:ring-primary/50 w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus-visible:ring-2"
         />
+        <select
+          value={situationId}
+          onChange={(event) => setSituationId(event.target.value)}
+          className="border-input bg-input-background focus-visible:ring-primary/50 w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus-visible:ring-2"
+          aria-label="Filtrar por situación"
+        >
+          <option value="">Todas las situaciones</option>
+          {(situationsQuery.data ?? []).map((situation) => (
+            <option key={situation.id} value={situation.id}>
+              {situation.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={needCategoryId}
+          onChange={(event) => setNeedCategoryId(event.target.value)}
+          className="border-input bg-input-background focus-visible:ring-primary/50 w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus-visible:ring-2"
+          aria-label="Filtrar por necesidad"
+        >
+          <option value="">Todas las necesidades</option>
+          {(needCategoriesQuery.data ?? []).map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={() => {
+            setSearch('')
+            setState('')
+            setCity('')
+            setSituationId('')
+            setNeedCategoryId('')
+          }}
+          className="text-muted-foreground hover:bg-muted hover:text-foreground inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition-colors"
+        >
+          <RotateCcw className="size-4" />
+          Limpiar
+        </button>
       </div>
 
       {/* Grid */}
