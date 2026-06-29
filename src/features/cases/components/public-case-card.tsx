@@ -77,43 +77,49 @@ export function PublicCaseCard({ case: c, search, onHelp }: PublicCaseCardProps)
       </div>
 
       {c.needs.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {c.needs.map((need) => (
-            <span
-              key={need.id}
-              className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs"
-            >
-              {need.category.name}
-              {need.quantity ? ` ×${need.quantity}${need.unit ? ` ${need.unit}` : ''}` : ''}
+        <div className="grid grid-cols-2 gap-1.5">
+          {c.needs.slice(0, 4).map((need) => {
+            const label = `${need.category.name}${need.quantity ? ` ×${need.quantity}${need.unit ? ` ${need.unit}` : ''}` : ''}`
+
+            return (
+              <span
+                key={need.id}
+                title={label}
+                className="bg-muted text-muted-foreground truncate rounded-full px-2.5 py-1 text-center text-xs"
+              >
+                {label}
+              </span>
+            )
+          })}
+          {c.needs.length > 4 && (
+            <span className="text-muted-foreground col-span-2 text-xs">
+              +{c.needs.length - 4} {c.needs.length - 4 === 1 ? 'necesidad' : 'necesidades'} más
             </span>
-          ))}
+          )}
         </div>
       )}
 
-      <div className="border-border mt-auto flex items-center justify-between border-t pt-3">
-        <div className="text-muted-foreground flex items-center gap-3 font-mono text-xs">
-          <span title="Última ayuda">
-            {c.last_helped_at ? `Última: ${formatDate(c.last_helped_at)}` : 'Sin ayudas todavía'}
-          </span>
-          <span>
-            {c.helpRecordsCount} {c.helpRecordsCount === 1 ? 'ayuda' : 'ayudas'}
-          </span>
-        </div>
+      <div className="border-border mt-auto flex flex-col gap-3 border-t pt-3">
+        <p className="text-muted-foreground font-mono text-xs">
+          {c.last_helped_at ? `Última ayuda: ${formatDate(c.last_helped_at)}` : 'Sin ayudas todavía'}
+          <span aria-hidden="true"> · </span>
+          {c.helpRecordsCount} {c.helpRecordsCount === 1 ? 'ayuda' : 'ayudas'}
+        </p>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => void copyCard()}
-            className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-primary inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2"
+            className="border-primary text-primary hover:bg-primary/10 focus-visible:ring-primary inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2"
             aria-label={`Copiar ficha de ${c.full_name}`}
             title="Copiar ficha"
           >
-            {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+            {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
             {copied ? 'Copiada' : 'Copiar ficha'}
           </button>
           <button
             type="button"
             onClick={onHelp}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-primary rounded-full px-4 py-1.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-primary min-w-0 flex-1 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2"
           >
             Ayudar
           </button>
