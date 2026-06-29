@@ -1,16 +1,25 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database, CasePhone, AssistanceMethod } from '@/shared/types/database.types'
+import type {
+  Database,
+  CasePhone,
+  AssistanceMethod,
+  CasePrivateData,
+  SituationCategory,
+} from '@/shared/types/database.types'
 import type {
   ArchiveCaseInput,
+  CreateCaseInput,
   PrivateCaseFilters,
   PublicCase,
   PublicCaseFilters,
   RevealAssistancePayload,
+  UpdateCaseInput,
 } from '../types/cases.types'
+import { normalizeText } from '@/shared/utils/normalize-text'
 import type { Paginated } from '@/shared/types/common.types'
 import { PAGE_SIZE, encodeCursor, decodeCursor } from '@/shared/utils/pagination'
 
-type DBClient = SupabaseClient<Database>
+type DBClient = Pick<SupabaseClient<Database>, 'from'>
 type CaseRow = Database['public']['Tables']['cases']['Row']
 
 type RawPublicCase = {
@@ -71,7 +80,12 @@ export class CasesRepository {
     if (filters.city) query = query.eq('city', filters.city)
     if (filters.situationId) query = query.eq('situation_category_id', filters.situationId)
     if (filters.search) {
-      query = query.textSearch('full_name', filters.search, { type: 'websearch', config: 'simple' })
+      const search = filters.search.replace(/[%_,()]/g, ' ').trim()
+      if (search) {
+        query = query.or(
+          `full_name.ilike.%${search}%,city.ilike.%${search}%,state.ilike.%${search}%,country.ilike.%${search}%`,
+        )
+      }
     }
     if (restrictToIds) query = query.in('id', restrictToIds)
 
@@ -173,13 +187,16 @@ export class CasesRepository {
     if (filters.city) query = query.eq('city', filters.city)
     if (filters.situationId) query = query.eq('situation_category_id', filters.situationId)
     if (filters.search) {
-      query = query.textSearch('full_name', filters.search, { type: 'websearch', config: 'simple' })
+      const search = filters.search.replace(/[%_,()]/g, ' ').trim()
+      if (search) {
+        query = query.or(
+          `full_name.ilike.%${search}%,public_code.ilike.%${search}%,city.ilike.%${search}%,state.ilike.%${search}%,country.ilike.%${search}%`,
+        )
+      }
     }
     if (restrictToIds) query = query.in('id', restrictToIds)
 
-    query = query
-      .order('created_at', { ascending: false })
-      .range(offset, offset + PAGE_SIZE)
+    query = query.order('created_at', { ascending: false }).range(offset, offset + PAGE_SIZE)
 
     const { data, error } = await query
     if (error) throw new Error(`[CasesRepository.listPrivate] ${error.message}`)
@@ -210,8 +227,13 @@ export class CasesRepository {
 
   // ── Duplicate detection ──────────────────────────────────────────────────
 
-  async findByIdNumber(idNumber: string): Promise<{ id: string; publicCode: string; fullName: string }[]> {
-    type Row = { case_id: string; cases: { id: string; public_code: string; full_name: string } | null }
+  async findByIdNumber(
+    idNumber: string,
+  ): Promise<{ id: string; publicCode: string; fullName: string }[]> {
+    type Row = {
+      case_id: string
+      cases: { id: string; public_code: string; full_name: string } | null
+    }
 
     const { data, error } = await this.db
       .from('case_private_data')
@@ -230,8 +252,13 @@ export class CasesRepository {
       }))
   }
 
-  async findByPhone(phone: string): Promise<{ id: string; publicCode: string; fullName: string }[]> {
-    type Row = { case_id: string; cases: { id: string; public_code: string; full_name: string } | null }
+  async findByPhone(
+    phone: string,
+  ): Promise<{ id: string; publicCode: string; fullName: string }[]> {
+    type Row = {
+      case_id: string
+      cases: { id: string; public_code: string; full_name: string } | null
+    }
 
     const { data, error } = await this.db
       .from('case_phones')
@@ -250,7 +277,175 @@ export class CasesRepository {
       }))
   }
 
+  // ── Situation categories ─────────────────────────────────────────────────
+
+  async listSituationCategories(): Promise<SituationCategory[]> {
+    const { data, error } = await this.db
+      .from('situation_categories')
+      .select('*')
+      .is('deleted_at', null)
+      .order('name')
+    if (error) throw new Error(`[CasesRepository.listSituationCategories] ${error.message}`)
+    return (data ?? []) as SituationCategory[]
+  }
+
+  async createSituationCategory(name: string, createdByUserId: string): Promise<SituationCategory> {
+    const normalized = normalizeText(name)
+    const { data, error } = await this.db
+      .from('situation_categories')
+      .upsert(
+        {
+          name,
+          normalized_name: normalized,
+          created_by_user_id: createdByUserId,
+          deleted_at: null,
+        },
+        { onConflict: 'normalized_name' },
+      )
+      .select('*')
+      .single()
+    if (error) throw new Error(`[CasesRepository.createSituationCategory] ${error.message}`)
+    if (!data) throw new Error('[CasesRepository.createSituationCategory] No data returned')
+    return data as SituationCategory
+  }
+
+  // ── Private data & phones (read) ─────────────────────────────────────────
+
+  async findPrivateDataByCaseId(caseId: string): Promise<CasePrivateData | null> {
+    const { data, error } = await this.db
+      .from('case_private_data')
+      .select('*')
+      .eq('case_id', caseId)
+      .is('deleted_at', null)
+      .single()
+    if (error?.code === 'PGRST116') return null
+    if (error) throw new Error(`[CasesRepository.findPrivateDataByCaseId] ${error.message}`)
+    return data as CasePrivateData | null
+  }
+
+  async findPhonesByCaseId(caseId: string): Promise<CasePhone[]> {
+    const { data, error } = await this.db
+      .from('case_phones')
+      .select('*')
+      .eq('case_id', caseId)
+      .is('deleted_at', null)
+      .order('is_primary', { ascending: false })
+    if (error) throw new Error(`[CasesRepository.findPhonesByCaseId] ${error.message}`)
+    return (data ?? []) as CasePhone[]
+  }
+
   // ── Mutations ─────────────────────────────────────────────────────────────
+
+  async create(input: CreateCaseInput): Promise<CaseRow> {
+    const { data: caseData, error: caseError } = await this.db
+      .from('cases')
+      .insert({
+        full_name: input.fullName,
+        case_type: input.caseType,
+        situation_category_id: input.situationCategoryId,
+        public_contact_place: input.publicContactPlace,
+        state: input.state,
+        city: input.city,
+        country: input.country,
+        public_notes: input.publicNotes ?? null,
+        created_by_user_id: input.createdByUserId,
+      })
+      .select('*')
+      .single()
+
+    if (caseError) throw new Error(`[CasesRepository.create] ${caseError.message}`)
+    if (!caseData) throw new Error('[CasesRepository.create] No data returned')
+
+    const caseId = caseData.id
+
+    const { error: privateError } = await this.db.from('case_private_data').upsert(
+      {
+        case_id: caseId,
+        id_number: input.privateData.idNumber,
+        birth_date: input.privateData.birthDate ?? null,
+        previous_full_address: input.privateData.previousFullAddress,
+        current_full_address: input.privateData.currentFullAddress,
+        verification_notes: input.privateData.verificationNotes,
+        private_notes: input.privateData.privateNotes ?? null,
+      },
+      { onConflict: 'case_id' },
+    )
+
+    if (privateError)
+      throw new Error(`[CasesRepository.create - private data] ${privateError.message}`)
+
+    if (input.phones.length > 0) {
+      const { error: phonesError } = await this.db.from('case_phones').insert(
+        input.phones.map((p) => ({
+          case_id: caseId,
+          phone: p.phone,
+          label: p.label ?? null,
+          is_primary: p.isPrimary,
+        })),
+      )
+      if (phonesError) throw new Error(`[CasesRepository.create - phones] ${phonesError.message}`)
+    }
+
+    return caseData as CaseRow
+  }
+
+  async update(input: UpdateCaseInput): Promise<void> {
+    const { error: caseError } = await this.db
+      .from('cases')
+      .update({
+        full_name: input.fullName,
+        case_type: input.caseType,
+        situation_category_id: input.situationCategoryId,
+        public_contact_place: input.publicContactPlace,
+        state: input.state,
+        city: input.city,
+        country: input.country,
+        public_notes: input.publicNotes ?? null,
+        updated_by_user_id: input.updatedByUserId,
+      })
+      .eq('id', input.caseId)
+      .is('deleted_at', null)
+
+    if (caseError) throw new Error(`[CasesRepository.update] ${caseError.message}`)
+
+    const { error: privateError } = await this.db.from('case_private_data').upsert(
+      {
+        case_id: input.caseId,
+        id_number: input.privateData.idNumber,
+        birth_date: input.privateData.birthDate ?? null,
+        previous_full_address: input.privateData.previousFullAddress,
+        current_full_address: input.privateData.currentFullAddress,
+        verification_notes: input.privateData.verificationNotes,
+        private_notes: input.privateData.privateNotes ?? null,
+      },
+      { onConflict: 'case_id' },
+    )
+
+    if (privateError)
+      throw new Error(`[CasesRepository.update - private data] ${privateError.message}`)
+
+    // Replace phones: soft-delete existing, insert new ones
+    const { error: deletePhoneError } = await this.db
+      .from('case_phones')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('case_id', input.caseId)
+      .is('deleted_at', null)
+
+    if (deletePhoneError)
+      throw new Error(`[CasesRepository.update - delete phones] ${deletePhoneError.message}`)
+
+    if (input.phones.length > 0) {
+      const { error: phonesError } = await this.db.from('case_phones').insert(
+        input.phones.map((p) => ({
+          case_id: input.caseId,
+          phone: p.phone,
+          label: p.label ?? null,
+          is_primary: p.isPrimary,
+        })),
+      )
+      if (phonesError) throw new Error(`[CasesRepository.update - phones] ${phonesError.message}`)
+    }
+  }
 
   async archive(input: ArchiveCaseInput): Promise<void> {
     const { error } = await this.db
