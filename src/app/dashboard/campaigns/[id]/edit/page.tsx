@@ -37,7 +37,7 @@ export default async function EditCampaignPage({ params }: EditCampaignPageProps
       </div>
 
       <CampaignForm
-        action={(data) => updateCampaignAction(id, data)}
+        action={updateCampaignAction.bind(null, id)}
         defaultValues={{
           title: campaign.title,
           description: campaign.description ?? undefined,

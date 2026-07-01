@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { requireAuth } from '@/shared/lib/auth/guards'
+import { requireCampaignAdminOrAdmin } from '@/shared/lib/auth/guards'
 import { createServerSupabaseClient } from '@/shared/lib/supabase/server'
 import type { ActionResult } from '@/shared/types/action-result'
 import type { Database, NeedCategory } from '@/shared/types/database.types'
@@ -61,7 +61,7 @@ export async function createNeedAction(
   caseId: string,
   rawData: unknown,
 ): Promise<ActionResult<CaseNeedWithCategory>> {
-  const { profile } = await requireAuth()
+  const { profile } = await requireCampaignAdminOrAdmin()
   const parsedCaseId = idSchema.safeParse(caseId)
   const parsed = needFormSchema.safeParse(rawData)
 
@@ -110,7 +110,7 @@ export async function updateNeedAction(
   needId: string,
   rawData: unknown,
 ): Promise<ActionResult<CaseNeedWithCategory>> {
-  const { profile } = await requireAuth()
+  const { profile } = await requireCampaignAdminOrAdmin()
   const parsedIds = z.object({ caseId: idSchema, needId: idSchema }).safeParse({ caseId, needId })
   const parsed = needFormSchema.safeParse(rawData)
 
@@ -158,7 +158,7 @@ export async function deleteNeedAction(
   caseId: string,
   needId: string,
 ): Promise<ActionResult<{ id: string }>> {
-  const { profile } = await requireAuth()
+  const { profile } = await requireCampaignAdminOrAdmin()
   const parsed = z.object({ caseId: idSchema, needId: idSchema }).safeParse({ caseId, needId })
   if (!parsed.success) return { success: false, error: 'Identificador inválido.' }
 
@@ -182,7 +182,7 @@ export async function deleteNeedAction(
 export async function createNeedCategoryAction(
   rawData: unknown,
 ): Promise<ActionResult<NeedCategory>> {
-  const { profile } = await requireAuth()
+  const { profile } = await requireCampaignAdminOrAdmin()
   const parsed = needCategoryCreateSchema.safeParse(rawData)
   if (!parsed.success) {
     return {

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { notFound } from 'next/navigation'
-import { requireAuth } from '@/shared/lib/auth/guards'
+import { requireCampaignAdminOrAdmin } from '@/shared/lib/auth/guards'
 import { createServerSupabaseClient } from '@/shared/lib/supabase/server'
 import { createCasesRepository } from '@/features/cases/repositories/cases.repository'
 import { CaseForm } from '@/features/cases/components/case-form'
@@ -14,7 +14,7 @@ interface EditCasePageProps {
 
 export default async function EditCasePage({ params }: EditCasePageProps) {
   const { id } = await params
-  await requireAuth()
+  await requireCampaignAdminOrAdmin()
 
   const client = await createServerSupabaseClient()
   const repo = createCasesRepository(client)

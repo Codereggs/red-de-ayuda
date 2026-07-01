@@ -7,8 +7,11 @@ import {
   Clock3,
   FolderHeart,
   HandHeart,
+  Megaphone,
   Plus,
+  TrendingUp,
 } from 'lucide-react'
+import { CampaignStatusBadge } from '@/features/campaigns/components/campaign-status-badge'
 import type { DashboardOverview as DashboardOverviewData } from '../types/dashboard.types'
 
 interface DashboardOverviewProps {
@@ -64,7 +67,7 @@ function StatCard({
 }
 
 export function DashboardOverview({ data, firstName }: DashboardOverviewProps) {
-  const { metrics, recentCases, recentHelpRecords } = data
+  const { metrics, recentCases, recentHelpRecords, recentCampaigns } = data
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:py-10">
@@ -89,7 +92,19 @@ export function DashboardOverview({ data, firstName }: DashboardOverviewProps) {
         <h2 id="dashboard-metrics" className="sr-only">
           Métricas principales
         </h2>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <StatCard
+            icon={Megaphone}
+            label="Campañas activas"
+            value={metrics.activeCampaigns}
+            tone="primary"
+          />
+          <StatCard
+            icon={TrendingUp}
+            label="Recaudado (campañas)"
+            value={formatUsd(metrics.totalRaisedUsd)}
+            tone="primary"
+          />
           <StatCard
             icon={FolderHeart}
             label="Casos activos"
@@ -121,6 +136,70 @@ export function DashboardOverview({ data, firstName }: DashboardOverviewProps) {
             tone="accent"
           />
         </div>
+      </section>
+
+      <section className="bg-card border-border mt-8 rounded-2xl border p-5">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="font-display text-foreground text-lg font-medium">Campañas recientes</h2>
+            <p className="text-muted-foreground mt-0.5 text-xs">
+              Progreso de recaudación de las campañas en curso.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/campaigns"
+            className="text-primary inline-flex items-center gap-1 text-sm font-semibold hover:underline"
+          >
+            Ver todas
+            <ArrowRight className="size-4" />
+          </Link>
+        </div>
+
+        {recentCampaigns.length === 0 ? (
+          <p className="text-muted-foreground border-border rounded-xl border border-dashed p-8 text-center text-sm">
+            No hay campañas registradas.
+          </p>
+        ) : (
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {recentCampaigns.map((campaign) => (
+              <li key={campaign.id}>
+                <Link
+                  href={`/dashboard/campaigns/${campaign.id}`}
+                  className="border-border hover:bg-muted flex flex-col gap-2 rounded-xl border p-4 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-foreground truncate text-sm font-semibold">
+                        {campaign.title}
+                      </p>
+                      <p className="text-muted-foreground mt-0.5 font-mono text-xs">
+                        {campaign.publicCode}
+                      </p>
+                    </div>
+                    <CampaignStatusBadge status={campaign.status} />
+                  </div>
+
+                  <div className="mt-1">
+                    <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
+                      <div
+                        className="bg-primary h-full rounded-full"
+                        style={{ width: `${campaign.progressPct}%` }}
+                      />
+                    </div>
+                    <div className="text-muted-foreground mt-1.5 flex items-center justify-between text-xs">
+                      <span className="text-foreground font-mono font-semibold">
+                        {formatUsd(campaign.raisedAmountUsd)}
+                      </span>
+                      <span className="font-mono">
+                        {campaign.progressPct}% de {formatUsd(campaign.goalAmountUsd)}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">

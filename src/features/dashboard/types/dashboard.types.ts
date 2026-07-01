@@ -4,6 +4,19 @@ export interface DashboardMetrics {
   totalHelpRecords: number
   totalAmountUsd: number
   casesWithoutHelp: number
+  activeCampaigns: number
+  totalRaisedUsd: number
+}
+
+export interface RecentDashboardCampaign {
+  id: string
+  publicCode: string
+  title: string
+  status: 'collecting' | 'purchasing' | 'shipping' | 'completed'
+  goalAmountUsd: number
+  raisedAmountUsd: number
+  progressPct: number
+  createdAt: string
 }
 
 export interface RecentDashboardCase {
@@ -31,4 +44,5 @@ export interface DashboardOverview {
   metrics: DashboardMetrics
   recentCases: RecentDashboardCase[]
   recentHelpRecords: RecentDashboardHelpRecord[]
+  recentCampaigns: RecentDashboardCampaign[]
 }

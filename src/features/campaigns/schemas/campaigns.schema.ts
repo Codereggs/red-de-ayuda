@@ -49,21 +49,70 @@ export const contributionFormSchema = z.object({
   receiptImagePath: z.string().optional(),
 })
 
-export const campaignAssistanceMethodSchema = z.object({
-  countryCode: z.string().length(2).default('VE'),
-  type: z.enum(ASSISTANCE_METHOD_TYPES),
-  label: z.string().min(1, 'El nombre es requerido').max(200),
-  isPrimary: z.boolean().default(false),
-  isActive: z.boolean().default(true),
-  holderFullName: z.string().min(1, 'El titular es requerido').max(200),
-  idNumber: z.string().max(50).optional(),
-  phone: z.string().max(30).optional(),
-  bankName: z.string().max(200).optional(),
-  accountNumber: z.string().max(50).optional(),
-  accountType: z.string().max(100).optional(),
-  alias: z.string().max(200).optional(),
-  notes: z.string().max(1000).optional(),
+export const campaignAssistanceMethodSchema = z
+  .object({
+    countryCode: z.string().length(2).default('VE'),
+    type: z.enum(ASSISTANCE_METHOD_TYPES),
+    label: z.string().min(1, 'El nombre es requerido').max(200),
+    isPrimary: z.boolean().default(false),
+    isActive: z.boolean().default(true),
+    holderFullName: z.string().min(1, 'El titular es requerido').max(200),
+    idNumber: z.string().max(50).optional(),
+    phone: z.string().max(30).optional(),
+    bankName: z.string().max(200).optional(),
+    accountNumber: z.string().max(50).optional(),
+    accountType: z.string().max(100).optional(),
+    alias: z.string().max(200).optional(),
+    notes: z.string().max(1000).optional(),
+    // Datos para transferencia internacional a Venezuela (Brubank AR → VE)
+    documentType: z.string().max(50).optional(),
+    addressCountry: z.string().max(100).optional(),
+    addressState: z.string().max(100).optional(),
+    addressCity: z.string().max(100).optional(),
+    addressLine: z.string().max(300).optional(),
+    purpose: z.string().max(300).optional(),
+  })
+  .superRefine((data, ctx) => {
+    // Para transferencias bancarias a Venezuela, los datos de transferencia
+    // internacional son obligatorios (los exige la banca de origen, ej. Brubank).
+    if (data.countryCode !== 'VE' || data.type !== 'bank_transfer') return
+    const required: [keyof typeof data, string][] = [
+      ['documentType', 'El tipo de documento es requerido'],
+      ['idNumber', 'El número de documento es requerido'],
+      ['bankName', 'El banco es requerido'],
+      ['accountType', 'El tipo de cuenta es requerido'],
+      ['accountNumber', 'El número de cuenta es requerido'],
+      ['phone', 'El teléfono es requerido'],
+      ['addressCountry', 'El país de dirección es requerido'],
+      ['addressState', 'La provincia/estado es requerido'],
+      ['addressCity', 'La ciudad es requerida'],
+      ['addressLine', 'La dirección es requerida'],
+      ['purpose', 'El propósito es requerido'],
+    ]
+    for (const [field, message] of required) {
+      const value = data[field]
+      if (typeof value !== 'string' || value.trim() === '') {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message })
+      }
+    }
+  })
+
+export const bulkMemberNeedJsonSchema = z.object({
+  medicine: z.string().min(1),
+  dose: z.string().default(''),
+  price: z.number().nullable().optional(),
 })
+
+export const bulkMemberJsonSchema = z.array(
+  z.object({
+    name: z.string().min(1, 'Nombre requerido'),
+    document: z.union([z.string(), z.number()]).optional().nullable(),
+    needs: z.array(bulkMemberNeedJsonSchema).default([]),
+  }),
+)
+
+export type BulkMemberJson = z.infer<typeof bulkMemberJsonSchema>
+export type BulkMemberNeedJson = z.infer<typeof bulkMemberNeedJsonSchema>
 
 export type CampaignFormValues = z.infer<typeof campaignFormSchema>
 export type CampaignStatusValues = z.infer<typeof campaignStatusSchema>

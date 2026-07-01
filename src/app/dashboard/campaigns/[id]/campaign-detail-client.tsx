@@ -138,7 +138,14 @@ export function CampaignDetailClient({
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <ContributionsManager
+        campaignId={campaign.id}
+        initialContributions={contributions}
+        readOnly={isArchived}
+        canManage={isCampaignAdminOrAdmin}
+      />
+
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <CampaignMembersManager
           campaignId={campaign.id}
           initialMembers={members}
@@ -151,13 +158,6 @@ export function CampaignDetailClient({
           readOnly={isArchived || !isCampaignAdminOrAdmin}
         />
       </div>
-
-      <ContributionsManager
-        campaignId={campaign.id}
-        initialContributions={contributions}
-        readOnly={isArchived}
-        canManage={isCampaignAdminOrAdmin}
-      />
 
       {isArchived && campaign.archive_reason && (
         <div className="bg-card border-border mt-6 rounded-2xl border p-6">
