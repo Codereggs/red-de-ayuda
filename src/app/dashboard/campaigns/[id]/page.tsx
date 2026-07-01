@@ -18,13 +18,14 @@ export default async function CampaignDetailPage({ params }: CampaignPageProps) 
   const repo = createCampaignsRepository(client)
   const needsRepo = createNeedsRepository(client)
 
-  const [campaign, contributions, assistanceMethods, needCategories, publicCampaign] =
+  const [campaign, contributions, assistanceMethods, needCategories, publicCampaign, images] =
     await Promise.all([
       repo.findPrivateById(id),
       repo.listContributions(id),
       repo.listAssistanceMethods(id),
       needsRepo.listCategories(),
       repo.findPublicById(id),
+      repo.listCampaignImages(id),
     ])
 
   if (!campaign) notFound()
@@ -42,6 +43,7 @@ export default async function CampaignDetailPage({ params }: CampaignPageProps) 
       contributions={contributions}
       assistanceMethods={assistanceMethods}
       needCategories={needCategories}
+      images={images}
       progressPct={progressPct}
       isCampaignAdminOrAdmin={isCampaignAdminOrAdmin}
     />

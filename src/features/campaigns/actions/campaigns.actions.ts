@@ -17,6 +17,7 @@ import {
 } from '../schemas/campaigns.schema'
 import type { ActionResult } from '@/shared/types/action-result'
 import type { Campaign, CampaignAssistanceMethod, CampaignContribution } from '@/shared/types/database.types'
+import type { CampaignImage } from '../types/campaigns.types'
 
 const idSchema = z.string().uuid()
 
@@ -45,10 +46,14 @@ export async function createCampaignAction(rawData: unknown): Promise<ActionResu
   try {
     const client = await createServerSupabaseClient()
     const repo = createCampaignsRepository(client)
+    const helperContactUrl = parsed.data.helperContactUrl?.trim() || null
     const campaign = await repo.create({
       title: parsed.data.title,
       description: parsed.data.description,
       goalAmountUsd: parsed.data.goalAmountUsd,
+      helperContactUrl,
+      // El párrafo solo se guarda si hay link.
+      helperContactNote: helperContactUrl ? parsed.data.helperContactNote?.trim() || null : null,
       createdByUserId: profile.id,
     })
     campaignId = campaign.id
@@ -77,11 +82,14 @@ export async function updateCampaignAction(
   try {
     const client = await createServerSupabaseClient()
     const repo = createCampaignsRepository(client)
+    const helperContactUrl = parsed.data.helperContactUrl?.trim() || null
     await repo.update({
       campaignId,
       title: parsed.data.title,
       description: parsed.data.description,
       goalAmountUsd: parsed.data.goalAmountUsd,
+      helperContactUrl,
+      helperContactNote: helperContactUrl ? parsed.data.helperContactNote?.trim() || null : null,
       updatedByUserId: profile.id,
     })
   } catch {
@@ -203,6 +211,60 @@ export async function bulkAddCampaignMembersAction(
     return { success: true, data: { added, newCategories: newCategoriesCount } }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Error en la importación.' }
+  }
+}
+
+// ── Images ─────────────────────────────────────────────────────────────────
+
+export async function addCampaignImagesAction(
+  campaignId: string,
+  paths: unknown,
+): Promise<ActionResult<{ images: CampaignImage[] }>> {
+  const { profile } = await requireCampaignAdminOrAdmin()
+
+  const parsedId = idSchema.safeParse(campaignId)
+  const parsedPaths = z.array(z.string().min(1)).max(30).safeParse(paths)
+  if (!parsedId.success || !parsedPaths.success) {
+    return { success: false, error: 'Datos de imágenes inválidos.' }
+  }
+  if (parsedPaths.data.length === 0) return { success: false, error: 'No hay imágenes para agregar.' }
+
+  try {
+    const client = await createServerSupabaseClient()
+    const repo = createCampaignsRepository(client)
+    const images = await repo.addCampaignImages(campaignId, parsedPaths.data, profile.id)
+    revalidateCampaign(campaignId)
+    return { success: true, data: { images } }
+  } catch (err) {
+    console.error('[addCampaignImagesAction]', err)
+    return { success: false, error: err instanceof Error ? err.message : 'Error al guardar imágenes.' }
+  }
+}
+
+export async function deleteCampaignImageAction(
+  campaignId: string,
+  imageId: string,
+): Promise<ActionResult<void>> {
+  await requireCampaignAdminOrAdmin()
+
+  const parsedId = idSchema.safeParse(campaignId)
+  const parsedImageId = idSchema.safeParse(imageId)
+  if (!parsedId.success || !parsedImageId.success) {
+    return { success: false, error: 'Identificador inválido.' }
+  }
+
+  try {
+    const client = await createServerSupabaseClient()
+    const repo = createCampaignsRepository(client)
+    const storagePath = await repo.deleteCampaignImage(campaignId, imageId)
+    // Borrar el objeto en Storage para no dejar basura.
+    const { deleteCampaignImageObject } = await import('@/shared/lib/supabase/storage')
+    await deleteCampaignImageObject(storagePath)
+    revalidateCampaign(campaignId)
+    return { success: true, data: undefined }
+  } catch (err) {
+    console.error('[deleteCampaignImageAction]', err)
+    return { success: false, error: err instanceof Error ? err.message : 'Error al eliminar la imagen.' }
   }
 }
 

@@ -15,6 +15,7 @@ import type {
   AddCampaignMemberInput,
   UpdateCampaignMemberInput,
   CampaignMemberDetail,
+  CampaignImage,
   BulkAddMembersInput,
   CreateContributionInput,
   CreateCampaignAssistanceMethodInput,
@@ -23,6 +24,7 @@ import type {
 } from '../types/campaigns.types'
 import type { Paginated } from '@/shared/types/common.types'
 import { PAGE_SIZE, encodeCursor, decodeCursor } from '@/shared/utils/pagination'
+import { campaignImageUrl } from '@/shared/lib/supabase/storage-urls'
 
 type DBClient = Pick<SupabaseClient<Database>, 'from'>
 
@@ -51,7 +53,7 @@ export class CampaignsRepository {
 
     let query = this.db
       .from('campaigns')
-      .select('id, public_code, title, description, goal_amount_usd, raised_amount_usd, status, cover_image_path, created_at, updated_at')
+      .select('id, public_code, title, description, goal_amount_usd, raised_amount_usd, status, cover_image_path, helper_contact_url, helper_contact_note, created_at, updated_at')
       .eq('verified', true)
       .is('archived_at', null)
       .is('deleted_at', null)
@@ -85,7 +87,7 @@ export class CampaignsRepository {
   async findPublicById(id: string): Promise<PublicCampaign | null> {
     const { data, error } = await this.db
       .from('campaigns')
-      .select('id, public_code, title, description, goal_amount_usd, raised_amount_usd, status, cover_image_path, created_at, updated_at')
+      .select('id, public_code, title, description, goal_amount_usd, raised_amount_usd, status, cover_image_path, helper_contact_url, helper_contact_note, created_at, updated_at')
       .eq('id', id)
       .eq('verified', true)
       .is('archived_at', null)
@@ -97,8 +99,11 @@ export class CampaignsRepository {
     if (!data) return null
 
     const row = data as Campaign
-    const memberMap = await this.batchPublicMembers([row.id])
-    return this.toPublicCampaign(row, memberMap.get(row.id) ?? [])
+    const [memberMap, images] = await Promise.all([
+      this.batchPublicMembers([row.id]),
+      this.listCampaignImages(row.id),
+    ])
+    return this.toPublicCampaign(row, memberMap.get(row.id) ?? [], images)
   }
 
   // ── Private reads ────────────────────────────────────────────────────────
@@ -153,6 +158,8 @@ export class CampaignsRepository {
         title: input.title,
         description: input.description ?? null,
         goal_amount_usd: input.goalAmountUsd,
+        helper_contact_url: input.helperContactUrl ?? null,
+        helper_contact_note: input.helperContactNote ?? null,
         created_by_user_id: input.createdByUserId,
       })
       .select('*')
@@ -170,6 +177,8 @@ export class CampaignsRepository {
         title: input.title,
         description: input.description ?? null,
         goal_amount_usd: input.goalAmountUsd,
+        helper_contact_url: input.helperContactUrl ?? null,
+        helper_contact_note: input.helperContactNote ?? null,
         updated_by_user_id: input.updatedByUserId,
       })
       .eq('id', input.campaignId)
@@ -758,7 +767,11 @@ export class CampaignsRepository {
     return map
   }
 
-  private toPublicCampaign(row: Campaign, members: PublicCampaign['members']): PublicCampaign {
+  private toPublicCampaign(
+    row: Campaign,
+    members: PublicCampaign['members'],
+    images: PublicCampaign['images'] = [],
+  ): PublicCampaign {
     const progressPct =
       row.goal_amount_usd > 0
         ? Math.min(100, Math.round((row.raised_amount_usd / row.goal_amount_usd) * 100))
@@ -773,11 +786,86 @@ export class CampaignsRepository {
       raised_amount_usd: row.raised_amount_usd,
       status: row.status,
       cover_image_path: row.cover_image_path,
+      helper_contact_url: row.helper_contact_url,
+      helper_contact_note: row.helper_contact_note,
       created_at: row.created_at,
       updated_at: row.updated_at,
       progressPct,
       members,
+      images,
     }
+  }
+
+  // ── Campaign images ────────────────────────────────────────────────────────
+
+  async listCampaignImages(campaignId: string): Promise<CampaignImage[]> {
+    const { data, error } = await this.db
+      .from('campaign_images')
+      .select('id, storage_path, sort_order')
+      .eq('campaign_id', campaignId)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true })
+
+    if (error) throw new Error(`[CampaignsRepository.listCampaignImages] ${error.message}`)
+    return (data ?? []).map((row) => ({
+      id: row.id,
+      storagePath: row.storage_path,
+      publicUrl: campaignImageUrl(row.storage_path),
+      sortOrder: row.sort_order,
+    }))
+  }
+
+  async addCampaignImages(
+    campaignId: string,
+    paths: string[],
+    createdByUserId: string,
+  ): Promise<CampaignImage[]> {
+    if (paths.length === 0) return []
+
+    // Siguiente sort_order = (máximo actual) + 1, para no romper el rango de integer.
+    const { data: maxRow } = await this.db
+      .from('campaign_images')
+      .select('sort_order')
+      .eq('campaign_id', campaignId)
+      .order('sort_order', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    const base = (maxRow?.sort_order ?? -1) + 1
+
+    const { data, error } = await this.db
+      .from('campaign_images')
+      .insert(
+        paths.map((storage_path, i) => ({
+          campaign_id: campaignId,
+          storage_path,
+          sort_order: base + i,
+          created_by_user_id: createdByUserId,
+        })),
+      )
+      .select('id, storage_path, sort_order')
+
+    if (error) throw new Error(`[CampaignsRepository.addCampaignImages] ${error.message}`)
+    return (data ?? []).map((row) => ({
+      id: row.id,
+      storagePath: row.storage_path,
+      publicUrl: campaignImageUrl(row.storage_path),
+      sortOrder: row.sort_order,
+    }))
+  }
+
+  /** Deletes the DB row and returns its storage path so the object can be removed. */
+  async deleteCampaignImage(campaignId: string, imageId: string): Promise<string> {
+    const { data, error } = await this.db
+      .from('campaign_images')
+      .delete()
+      .eq('id', imageId)
+      .eq('campaign_id', campaignId)
+      .select('storage_path')
+      .maybeSingle()
+
+    if (error) throw new Error(`[CampaignsRepository.deleteCampaignImage] ${error.message}`)
+    if (!data) throw new Error('[deleteCampaignImage] Imagen no encontrada.')
+    return data.storage_path
   }
 }
 

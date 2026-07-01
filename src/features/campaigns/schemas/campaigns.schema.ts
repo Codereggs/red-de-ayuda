@@ -7,6 +7,15 @@ export const campaignFormSchema = z.object({
   goalAmountUsd: z
     .number({ invalid_type_error: 'Ingresa un monto válido' })
     .positive('La meta debe ser mayor a 0'),
+  // Link opcional para que visitantes pidan unirse como helpers.
+  helperContactUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .refine((v) => !v || /^https?:\/\/.+/.test(v), 'Debe ser una URL válida (http/https)')
+    .optional(),
+  // Párrafo que acompaña el link (solo aplica si hay link).
+  helperContactNote: z.string().max(1000).optional(),
 })
 
 export const campaignStatusSchema = z.object({

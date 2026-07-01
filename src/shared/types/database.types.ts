@@ -481,6 +481,8 @@ export type Database = {
           status: 'collecting' | 'purchasing' | 'shipping' | 'completed'
           verified: boolean
           cover_image_path: string | null
+          helper_contact_url: string | null
+          helper_contact_note: string | null
           created_by_user_id: string | null
           updated_by_user_id: string | null
           archived_by_user_id: string | null
@@ -500,6 +502,8 @@ export type Database = {
           status?: 'collecting' | 'purchasing' | 'shipping' | 'completed'
           verified?: boolean
           cover_image_path?: string | null
+          helper_contact_url?: string | null
+          helper_contact_note?: string | null
           created_by_user_id?: string | null
           updated_by_user_id?: string | null
           archived_by_user_id?: string | null
@@ -517,6 +521,8 @@ export type Database = {
           status?: 'collecting' | 'purchasing' | 'shipping' | 'completed'
           verified?: boolean
           cover_image_path?: string | null
+          helper_contact_url?: string | null
+          helper_contact_note?: string | null
           updated_by_user_id?: string | null
           archived_by_user_id?: string | null
           archive_reason?: string | null
@@ -625,6 +631,30 @@ export type Database = {
           purpose?: string | null
           deleted_at?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+
+      campaign_images: {
+        Row: {
+          id: string
+          campaign_id: string
+          storage_path: string
+          sort_order: number
+          created_by_user_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          campaign_id: string
+          storage_path: string
+          sort_order?: number
+          created_by_user_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          storage_path?: string
+          sort_order?: number
         }
         Relationships: []
       }
