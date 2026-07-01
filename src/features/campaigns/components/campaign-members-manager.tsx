@@ -134,7 +134,7 @@ function NeedCategoryCombobox({
                   ) : (
                     <Plus className="size-3.5 shrink-0" />
                   )}
-                  Crear "{query.trim()}"
+                  Crear &quot;{query.trim()}&quot;
                 </button>
               </li>
             )}

@@ -1,4 +1,4 @@
-import type { Campaign, CampaignAssistanceMethod, CampaignContribution, NeedCategory } from '@/shared/types/database.types'
+import type { Campaign, CampaignAssistanceMethod, CampaignContribution } from '@/shared/types/database.types'
 
 export type CampaignStatus = 'collecting' | 'purchasing' | 'shipping' | 'completed'
 export type ContributionStatus = 'pending' | 'verified' | 'rejected'
