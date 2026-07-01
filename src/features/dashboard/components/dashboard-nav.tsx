@@ -2,18 +2,26 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ClipboardList, LayoutDashboard, ScrollText, Users } from 'lucide-react'
+import { ClipboardList, LayoutDashboard, ScrollText, Users, Megaphone } from 'lucide-react'
 
 interface DashboardNavProps {
   isAdmin: boolean
+  isCampaignAdminOrAdmin: boolean
   mobile?: boolean
 }
 
-export function DashboardNav({ isAdmin, mobile = false }: DashboardNavProps) {
+export function DashboardNav({ isAdmin, isCampaignAdminOrAdmin, mobile = false }: DashboardNavProps) {
   const pathname = usePathname()
   const items = [
     { href: '/dashboard', label: 'Panel', icon: LayoutDashboard, exact: true },
-    { href: '/dashboard/cases', label: 'Casos', icon: ClipboardList, exact: false },
+    ...(isCampaignAdminOrAdmin
+      ? [
+          { href: '/dashboard/cases', label: 'Casos', icon: ClipboardList, exact: false },
+          { href: '/dashboard/campaigns', label: 'Campañas', icon: Megaphone, exact: false },
+        ]
+      : [
+          { href: '/dashboard/campaigns', label: 'Campañas', icon: Megaphone, exact: false },
+        ]),
     ...(isAdmin
       ? [
           { href: '/dashboard/users', label: 'Usuarios', icon: Users, exact: false },

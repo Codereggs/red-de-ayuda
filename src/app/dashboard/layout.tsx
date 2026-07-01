@@ -6,6 +6,7 @@ import { AppLogo } from '@/shared/components/app-logo'
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { profile } = await requireAuth()
   const isAdmin = profile.role === 'admin'
+  const isCampaignAdminOrAdmin = profile.role === 'admin' || profile.role === 'campaign_admin'
 
   return (
     <div className="bg-background min-h-screen md:flex">
@@ -14,7 +15,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <AppLogo />
         </div>
 
-        <DashboardNav isAdmin={isAdmin} />
+        <DashboardNav isAdmin={isAdmin} isCampaignAdminOrAdmin={isCampaignAdminOrAdmin} />
 
         <div className="border-border mt-auto border-t p-4">
           <p className="text-foreground truncate px-2 text-sm font-semibold">{profile.full_name}</p>
@@ -29,7 +30,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <AppLogo size="sm" />
             <LogoutButton className="text-muted-foreground hover:bg-muted rounded-full px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60" />
           </div>
-          <DashboardNav isAdmin={isAdmin} mobile />
+          <DashboardNav isAdmin={isAdmin} isCampaignAdminOrAdmin={isCampaignAdminOrAdmin} mobile />
         </header>
         <main>{children}</main>
       </div>
