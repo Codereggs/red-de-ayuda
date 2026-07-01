@@ -21,12 +21,16 @@ export function CampaignForm({ action, defaultValues, mode = 'create' }: Campaig
     register,
     handleSubmit,
     setError,
+    watch,
     formState: { errors, isValid },
   } = useForm<CampaignFormValues>({
     resolver: zodResolver(campaignFormSchema),
     mode: 'onChange',
     defaultValues,
   })
+
+  const helperContactUrl = watch('helperContactUrl')
+  const hasHelperLink = !!helperContactUrl?.trim()
 
   function onSubmit(data: CampaignFormValues) {
     startTransition(async () => {
@@ -93,6 +97,53 @@ export function CampaignForm({ action, defaultValues, mode = 'create' }: Campaig
               <p className="text-destructive text-xs">{errors.goalAmountUsd.message}</p>
             )}
           </div>
+        </div>
+      </section>
+
+      <section className="bg-card border-border flex flex-col gap-5 rounded-2xl border p-6">
+        <div>
+          <h2 className="font-display text-foreground text-lg font-medium">
+            Sumar helpers (opcional)
+          </h2>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Link para que quienes vean la campaña pública puedan pedir unirse como helpers.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-foreground text-sm font-medium">Link de contacto</label>
+          <input
+            {...register('helperContactUrl')}
+            type="url"
+            inputMode="url"
+            placeholder="https://wa.me/58412… o https://forms.gle/…"
+            className="border-input bg-background focus-visible:ring-primary/50 rounded-lg border px-3 py-2 text-sm focus:outline-none focus-visible:ring-2"
+          />
+          {errors.helperContactUrl && (
+            <p className="text-destructive text-xs">{errors.helperContactUrl.message}</p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label
+            className={`text-sm font-medium ${hasHelperLink ? 'text-foreground' : 'text-muted-foreground'}`}
+          >
+            Párrafo que acompaña el link
+          </label>
+          <textarea
+            {...register('helperContactNote')}
+            rows={3}
+            disabled={!hasHelperLink}
+            placeholder={
+              hasHelperLink
+                ? 'Ej: ¿Quieres ayudar? Escríbenos y súmate como helper de esta campaña.'
+                : 'Agrega primero un link de contacto para habilitar este texto.'
+            }
+            className="border-input bg-background focus-visible:ring-primary/50 resize-none rounded-lg border px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50"
+          />
+          {errors.helperContactNote && (
+            <p className="text-destructive text-xs">{errors.helperContactNote.message}</p>
+          )}
         </div>
       </section>
 
