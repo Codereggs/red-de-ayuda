@@ -278,3 +278,88 @@ create policy "webhook_events_internal_insert" on public.webhook_events
 drop policy if exists "webhook_events_admin_update" on public.webhook_events;
 create policy "webhook_events_admin_update" on public.webhook_events
   for update using (public.is_admin()) with check (public.is_admin());
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- campaigns
+-- ─────────────────────────────────────────────────────────────────────────────
+
+alter table public.campaigns                              enable row level security;
+alter table public.campaign_cases                         enable row level security;
+alter table public.campaign_member_needs                  enable row level security;
+alter table public.campaign_assistance_methods            enable row level security;
+alter table public.campaign_contributions                 enable row level security;
+alter table public.campaign_assistance_method_access_logs enable row level security;
+
+create or replace function public.is_public_campaign(campaign_uuid uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.campaigns
+    where id = campaign_uuid and verified = true and archived_at is null and deleted_at is null
+  );
+$$;
+
+drop policy if exists "campaigns_public_select" on public.campaigns;
+create policy "campaigns_public_select" on public.campaigns
+  for select using (verified = true and archived_at is null and deleted_at is null);
+
+drop policy if exists "campaigns_internal_all" on public.campaigns;
+create policy "campaigns_internal_all" on public.campaigns
+  for all using (public.is_helper_or_admin()) with check (public.is_helper_or_admin());
+
+drop policy if exists "campaign_cases_public_select" on public.campaign_cases;
+create policy "campaign_cases_public_select" on public.campaign_cases
+  for select using (
+    deleted_at is null
+    and public.is_public_campaign(campaign_id)
+  );
+
+drop policy if exists "cases_campaign_member_select" on public.cases;
+create policy "cases_campaign_member_select" on public.cases
+  for select using (
+    deleted_at is null
+    and exists (
+      select 1 from public.campaign_cases cc
+      where cc.case_id = id
+        and cc.deleted_at is null
+        and public.is_public_campaign(cc.campaign_id)
+    )
+  );
+
+drop policy if exists "campaign_member_needs_public_select" on public.campaign_member_needs;
+create policy "campaign_member_needs_public_select" on public.campaign_member_needs
+  for select using (
+    exists (
+      select 1 from public.campaign_cases cc
+      where cc.id = campaign_case_id
+        and cc.deleted_at is null
+        and public.is_public_campaign(cc.campaign_id)
+    )
+  );
+
+drop policy if exists "campaign_member_needs_internal_all" on public.campaign_member_needs;
+create policy "campaign_member_needs_internal_all" on public.campaign_member_needs
+  for all using (public.is_helper_or_admin()) with check (public.is_helper_or_admin());
+
+drop policy if exists "campaign_cases_internal_all" on public.campaign_cases;
+create policy "campaign_cases_internal_all" on public.campaign_cases
+  for all using (public.is_helper_or_admin()) with check (public.is_helper_or_admin());
+
+drop policy if exists "campaign_assistance_methods_internal_all" on public.campaign_assistance_methods;
+create policy "campaign_assistance_methods_internal_all" on public.campaign_assistance_methods
+  for all using (public.is_helper_or_admin()) with check (public.is_helper_or_admin());
+
+drop policy if exists "campaign_contributions_internal_all" on public.campaign_contributions;
+create policy "campaign_contributions_internal_all" on public.campaign_contributions
+  for all using (public.is_helper_or_admin()) with check (public.is_helper_or_admin());
+
+drop policy if exists "campaign_am_logs_insert_public" on public.campaign_assistance_method_access_logs;
+create policy "campaign_am_logs_insert_public" on public.campaign_assistance_method_access_logs
+  for insert with check (true);
+
+drop policy if exists "campaign_am_logs_admin_select" on public.campaign_assistance_method_access_logs;
+create policy "campaign_am_logs_admin_select" on public.campaign_assistance_method_access_logs
+  for select using (public.is_admin());
