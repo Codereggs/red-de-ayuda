@@ -11,7 +11,7 @@ export type Database = {
           id: string
           email: string
           full_name: string
-          role: 'admin' | 'helper'
+          role: 'admin' | 'campaign_admin' | 'helper'
           status: 'active' | 'inactive'
           created_at: string
           updated_at: string
@@ -20,7 +20,7 @@ export type Database = {
           id: string
           email: string
           full_name: string
-          role: 'admin' | 'helper'
+          role: 'admin' | 'campaign_admin' | 'helper'
           status?: 'active' | 'inactive'
           created_at?: string
           updated_at?: string
@@ -29,7 +29,7 @@ export type Database = {
           id?: string
           email?: string
           full_name?: string
-          role?: 'admin' | 'helper'
+          role?: 'admin' | 'campaign_admin' | 'helper'
           status?: 'active' | 'inactive'
           updated_at?: string
         }
@@ -98,12 +98,12 @@ export type Database = {
           public_code: string
           case_type: 'person' | 'family'
           full_name: string
-          short_description: string
+          short_description: string | null
           public_notes: string | null
-          public_contact_place: string
+          public_contact_place: string | null
           country: string
-          state: string
-          city: string
+          state: string | null
+          city: string | null
           status: 'active' | 'archived'
           verified: boolean
           /** Denormalized from help_records — maintained by DB trigger */
@@ -122,12 +122,12 @@ export type Database = {
           public_code?: string
           case_type: 'person' | 'family'
           full_name: string
-          short_description: string
+          short_description?: string | null
           public_notes?: string | null
-          public_contact_place: string
+          public_contact_place?: string | null
           country?: string
-          state: string
-          city: string
+          state?: string | null
+          city?: string | null
           status?: 'active' | 'archived'
           verified?: boolean
           last_helped_at?: string | null
@@ -143,12 +143,12 @@ export type Database = {
         Update: {
           case_type?: 'person' | 'family'
           full_name?: string
-          short_description?: string
+          short_description?: string | null
           public_notes?: string | null
-          public_contact_place?: string
+          public_contact_place?: string | null
           country?: string
-          state?: string
-          city?: string
+          state?: string | null
+          city?: string | null
           status?: 'active' | 'archived'
           verified?: boolean
           updated_by_user_id?: string | null
@@ -165,11 +165,11 @@ export type Database = {
         Row: {
           id: string
           case_id: string
-          id_number: string
+          id_number: string | null
           birth_date: string | null
-          previous_full_address: string
-          current_full_address: string
-          verification_notes: string
+          previous_full_address: string | null
+          current_full_address: string | null
+          verification_notes: string | null
           private_notes: string | null
           created_at: string
           updated_at: string
@@ -178,22 +178,22 @@ export type Database = {
         Insert: {
           id?: string
           case_id: string
-          id_number: string
+          id_number?: string | null
           birth_date?: string | null
-          previous_full_address: string
-          current_full_address: string
-          verification_notes: string
+          previous_full_address?: string | null
+          current_full_address?: string | null
+          verification_notes?: string | null
           private_notes?: string | null
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
         }
         Update: {
-          id_number?: string
+          id_number?: string | null
           birth_date?: string | null
-          previous_full_address?: string
-          current_full_address?: string
-          verification_notes?: string
+          previous_full_address?: string | null
+          current_full_address?: string | null
+          verification_notes?: string | null
           private_notes?: string | null
           deleted_at?: string | null
           updated_at?: string
@@ -469,6 +469,245 @@ export type Database = {
         }
         Relationships: []
       }
+      campaigns: {
+        Row: {
+          id: string
+          public_code: string
+          title: string
+          description: string | null
+          goal_amount_usd: number
+          /** Denormalized — maintained by sync_campaign_raised_amount trigger */
+          raised_amount_usd: number
+          status: 'collecting' | 'purchasing' | 'shipping' | 'completed'
+          verified: boolean
+          cover_image_path: string | null
+          created_by_user_id: string | null
+          updated_by_user_id: string | null
+          archived_by_user_id: string | null
+          archive_reason: string | null
+          archived_at: string | null
+          deleted_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          public_code?: string
+          title: string
+          description?: string | null
+          goal_amount_usd: number
+          raised_amount_usd?: number
+          status?: 'collecting' | 'purchasing' | 'shipping' | 'completed'
+          verified?: boolean
+          cover_image_path?: string | null
+          created_by_user_id?: string | null
+          updated_by_user_id?: string | null
+          archived_by_user_id?: string | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          deleted_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          title?: string
+          description?: string | null
+          goal_amount_usd?: number
+          raised_amount_usd?: number
+          status?: 'collecting' | 'purchasing' | 'shipping' | 'completed'
+          verified?: boolean
+          cover_image_path?: string | null
+          updated_by_user_id?: string | null
+          archived_by_user_id?: string | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          deleted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+
+      campaign_cases: {
+        Row: {
+          id: string
+          campaign_id: string
+          case_id: string
+          created_by_user_id: string | null
+          created_at: string
+          deleted_at: string | null
+        }
+        Insert: {
+          id?: string
+          campaign_id: string
+          case_id: string
+          created_by_user_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+        }
+        Update: {
+          deleted_at?: string | null
+        }
+        Relationships: []
+      }
+
+      campaign_assistance_methods: {
+        Row: {
+          id: string
+          campaign_id: string
+          type: 'bank_transfer' | 'pago_movil' | 'cash_contact' | 'physical_delivery'
+          label: string
+          is_primary: boolean
+          is_active: boolean
+          holder_full_name: string
+          id_number: string | null
+          phone: string | null
+          bank_name: string | null
+          account_number: string | null
+          account_type: string | null
+          notes: string | null
+          country_code: string
+          alias: string | null
+          created_at: string
+          updated_at: string
+          deleted_at: string | null
+        }
+        Insert: {
+          id?: string
+          campaign_id: string
+          type: 'bank_transfer' | 'pago_movil' | 'cash_contact' | 'physical_delivery'
+          label: string
+          is_primary?: boolean
+          is_active?: boolean
+          holder_full_name: string
+          id_number?: string | null
+          phone?: string | null
+          bank_name?: string | null
+          account_number?: string | null
+          account_type?: string | null
+          notes?: string | null
+          country_code?: string
+          alias?: string | null
+          created_at?: string
+          updated_at?: string
+          deleted_at?: string | null
+        }
+        Update: {
+          type?: 'bank_transfer' | 'pago_movil' | 'cash_contact' | 'physical_delivery'
+          label?: string
+          is_primary?: boolean
+          is_active?: boolean
+          holder_full_name?: string
+          id_number?: string | null
+          phone?: string | null
+          bank_name?: string | null
+          account_number?: string | null
+          account_type?: string | null
+          notes?: string | null
+          country_code?: string
+          alias?: string | null
+          deleted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+
+      campaign_member_needs: {
+        Row: {
+          id: string
+          campaign_case_id: string
+          need_category_id: string
+          price_usd: number
+          purchased_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          campaign_case_id: string
+          need_category_id: string
+          price_usd?: number
+          purchased_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          price_usd?: number
+          purchased_at?: string | null
+        }
+        Relationships: []
+      }
+
+      campaign_contributions: {
+        Row: {
+          id: string
+          campaign_id: string
+          amount_usd: number
+          status: 'pending' | 'verified' | 'rejected'
+          contributor_name: string | null
+          reference: string | null
+          receipt_image_path: string | null
+          transferred_at: string
+          notes: string | null
+          created_by_user_id: string | null
+          verified_by_user_id: string | null
+          verified_at: string | null
+          created_at: string
+          updated_at: string
+          deleted_at: string | null
+        }
+        Insert: {
+          id?: string
+          campaign_id: string
+          amount_usd: number
+          status?: 'pending' | 'verified' | 'rejected'
+          contributor_name?: string | null
+          reference?: string | null
+          receipt_image_path?: string | null
+          transferred_at?: string
+          notes?: string | null
+          created_by_user_id?: string | null
+          verified_by_user_id?: string | null
+          verified_at?: string | null
+          created_at?: string
+          updated_at?: string
+          deleted_at?: string | null
+        }
+        Update: {
+          amount_usd?: number
+          status?: 'pending' | 'verified' | 'rejected'
+          contributor_name?: string | null
+          reference?: string | null
+          receipt_image_path?: string | null
+          transferred_at?: string
+          notes?: string | null
+          verified_by_user_id?: string | null
+          verified_at?: string | null
+          deleted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+
+      campaign_assistance_method_access_logs: {
+        Row: {
+          id: string
+          campaign_id: string
+          campaign_assistance_method_id: string | null
+          action: 'viewed' | 'copied'
+          ip_hash: string | null
+          user_agent: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          campaign_id: string
+          campaign_assistance_method_id?: string | null
+          action: 'viewed' | 'copied'
+          ip_hash?: string | null
+          user_agent?: string | null
+          created_at?: string
+        }
+        Update: Record<string, never>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -491,3 +730,12 @@ export type AssistanceMethodAccessLog =
   Database['public']['Tables']['assistance_method_access_logs']['Row']
 export type AuditLog = Database['public']['Tables']['audit_logs']['Row']
 export type WebhookEvent = Database['public']['Tables']['webhook_events']['Row']
+
+export type Campaign = Database['public']['Tables']['campaigns']['Row']
+export type CampaignCase = Database['public']['Tables']['campaign_cases']['Row']
+export type CampaignAssistanceMethod =
+  Database['public']['Tables']['campaign_assistance_methods']['Row']
+export type CampaignContribution = Database['public']['Tables']['campaign_contributions']['Row']
+export type CampaignAssistanceMethodAccessLog =
+  Database['public']['Tables']['campaign_assistance_method_access_logs']['Row']
+export type CampaignMemberNeed = Database['public']['Tables']['campaign_member_needs']['Row']

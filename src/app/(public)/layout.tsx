@@ -1,18 +1,40 @@
 import Link from 'next/link'
 import { AppLogo } from '@/shared/components/app-logo'
+import { PublicMobileNav } from '@/shared/components/public-mobile-nav'
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-background flex min-h-screen flex-col">
       <header className="bg-background/90 border-border sticky top-0 z-30 border-b backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6 relative">
           <AppLogo />
-          <Link
-            href="/login"
-            className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-full px-4 py-2 text-sm font-semibold transition-colors"
-          >
-            Acceso del equipo
-          </Link>
+
+          {/* Desktop nav */}
+          <nav className="hidden items-center gap-1 sm:flex">
+            <Link
+              href="/"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-full px-4 py-2 text-sm font-semibold transition-colors"
+            >
+              Campañas
+            </Link>
+            <Link
+              href="/casos"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-full px-4 py-2 text-sm font-semibold transition-colors"
+            >
+              Casos
+            </Link>
+            <Link
+              href="/login"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-full px-4 py-2 text-sm font-semibold transition-colors"
+            >
+              Acceso del equipo
+            </Link>
+          </nav>
+
+          {/* Mobile nav */}
+          <div className="sm:hidden">
+            <PublicMobileNav />
+          </div>
         </div>
       </header>
       <div className="flex-1">{children}</div>

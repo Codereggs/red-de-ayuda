@@ -2,11 +2,6 @@ import { redirect } from 'next/navigation'
 import { getSession } from './get-session'
 import type { Session } from './get-session'
 
-/**
- * Requires an authenticated user with an active profile.
- * Redirects to /login if the session is missing or the profile is inactive.
- * Use in Server Components and Server Actions that require any authenticated role.
- */
 export async function requireAuth(): Promise<Session> {
   const session = await getSession()
 
@@ -21,10 +16,7 @@ export async function requireAuth(): Promise<Session> {
   return session
 }
 
-/**
- * Requires an authenticated user with role = 'admin'.
- * Redirects to /dashboard if the user is authenticated but not an admin.
- */
+/** Requires role = 'admin'. Redirects to /dashboard otherwise. */
 export async function requireAdmin(): Promise<Session> {
   const session = await requireAuth()
 
@@ -35,11 +27,18 @@ export async function requireAdmin(): Promise<Session> {
   return session
 }
 
-/**
- * Requires an authenticated user with role = 'helper' or 'admin'.
- * Equivalent to requireAuth() since all internal roles can access helper routes.
- * Kept explicit for readability at the call site.
- */
+/** Requires role = 'campaign_admin' or 'admin'. Redirects to /dashboard otherwise. */
+export async function requireCampaignAdminOrAdmin(): Promise<Session> {
+  const session = await requireAuth()
+
+  if (session.profile.role !== 'admin' && session.profile.role !== 'campaign_admin') {
+    redirect('/dashboard')
+  }
+
+  return session
+}
+
+/** Any authenticated active role. */
 export async function requireHelperOrAdmin(): Promise<Session> {
   return requireAuth()
 }

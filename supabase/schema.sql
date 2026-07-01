@@ -79,12 +79,12 @@ create table if not exists public.cases (
   public_code           text        not null unique default public.generate_case_public_code(),
   case_type             text        not null check (case_type in ('person', 'family')),
   full_name             text        not null,
-  short_description     text        not null,
+  short_description     text,
   public_notes          text,
-  public_contact_place  text        not null,
+  public_contact_place  text,
   country               text        not null default 'Venezuela',
-  state                 text        not null,
-  city                  text        not null,
+  state                 text,
+  city                  text,
   status                text        not null default 'active' check (status in ('active', 'archived')),
   verified              boolean     not null default true,
   -- Denormalized from help_records. Kept in sync by the sync_last_helped_at trigger.
@@ -109,11 +109,11 @@ create table if not exists public.cases (
 create table if not exists public.case_private_data (
   id                      uuid        primary key default gen_random_uuid(),
   case_id                 uuid        not null references public.cases(id) on delete cascade,
-  id_number               text        not null,
+  id_number               text,
   birth_date              date,
-  previous_full_address   text        not null,
-  current_full_address    text        not null,
-  verification_notes      text        not null,
+  previous_full_address   text,
+  current_full_address    text,
+  verification_notes      text,
   private_notes           text,
   created_at              timestamptz not null default now(),
   updated_at              timestamptz not null default now(),
@@ -372,7 +372,10 @@ begin
     'assistance_methods',
     'case_needs',
     'help_records',
-    'webhook_events'
+    'webhook_events',
+    'campaigns',
+    'campaign_assistance_methods',
+    'campaign_contributions'
   ] loop
     execute format('drop trigger if exists set_%I_updated_at on public.%I', t, t);
     execute format(
@@ -381,3 +384,139 @@ begin
     );
   end loop;
 end $$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Campaigns
+-- ─────────────────────────────────────────────────────────────────────────────
+
+create sequence if not exists public.campaign_public_code_seq start 1;
+
+create or replace function public.generate_campaign_public_code()
+returns text language plpgsql as $$
+declare next_number bigint;
+begin
+  next_number := nextval('public.campaign_public_code_seq');
+  return 'CMP-' || lpad(next_number::text, 6, '0');
+end; $$;
+
+create table if not exists public.campaigns (
+  id                    uuid        primary key default gen_random_uuid(),
+  public_code           text        not null unique default public.generate_campaign_public_code(),
+  title                 text        not null,
+  description           text,
+  goal_amount_usd       numeric     not null check (goal_amount_usd > 0),
+  raised_amount_usd     numeric     not null default 0,
+  status                text        not null default 'collecting'
+                          check (status in ('collecting', 'purchasing', 'shipping', 'completed')),
+  verified              boolean     not null default true,
+  cover_image_path      text,
+  created_by_user_id    uuid        references public.profiles(id),
+  updated_by_user_id    uuid        references public.profiles(id),
+  archived_by_user_id   uuid        references public.profiles(id),
+  archive_reason        text,
+  archived_at           timestamptz,
+  deleted_at            timestamptz,
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now()
+);
+
+create table if not exists public.campaign_cases (
+  id                  uuid        primary key default gen_random_uuid(),
+  campaign_id         uuid        not null references public.campaigns(id) on delete cascade,
+  case_id             uuid        not null references public.cases(id) on delete cascade,
+  created_by_user_id  uuid        references public.profiles(id),
+  created_at          timestamptz not null default now(),
+  deleted_at          timestamptz,
+  unique (campaign_id, case_id)
+);
+
+create table if not exists public.campaign_member_needs (
+  id                uuid        primary key default gen_random_uuid(),
+  campaign_case_id  uuid        not null references public.campaign_cases(id) on delete cascade,
+  description       text        not null check (char_length(description) >= 1 and char_length(description) <= 100),
+  price_usd         numeric     not null default 0 check (price_usd >= 0),
+  created_at        timestamptz not null default now()
+);
+
+create table if not exists public.campaign_assistance_methods (
+  id                uuid        primary key default gen_random_uuid(),
+  campaign_id       uuid        not null references public.campaigns(id) on delete cascade,
+  type              text        not null check (type in ('bank_transfer', 'pago_movil', 'cash_contact', 'physical_delivery')),
+  label             text        not null,
+  is_primary        boolean     not null default false,
+  is_active         boolean     not null default true,
+  holder_full_name  text        not null,
+  id_number         text,
+  phone             text,
+  bank_name         text,
+  account_number    text,
+  account_type      text,
+  notes             text,
+  created_at        timestamptz not null default now(),
+  updated_at        timestamptz not null default now(),
+  deleted_at        timestamptz
+);
+
+create table if not exists public.campaign_contributions (
+  id                    uuid        primary key default gen_random_uuid(),
+  campaign_id           uuid        not null references public.campaigns(id) on delete cascade,
+  amount_usd            numeric     not null check (amount_usd > 0),
+  status                text        not null default 'pending'
+                          check (status in ('pending', 'verified', 'rejected')),
+  contributor_name      text,
+  reference             text,
+  receipt_image_path    text,
+  transferred_at        date        not null default current_date,
+  notes                 text,
+  created_by_user_id    uuid        references public.profiles(id),
+  verified_by_user_id   uuid        references public.profiles(id),
+  verified_at           timestamptz,
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now(),
+  deleted_at            timestamptz
+);
+
+create table if not exists public.campaign_assistance_method_access_logs (
+  id                              uuid        primary key default gen_random_uuid(),
+  campaign_id                     uuid        not null references public.campaigns(id),
+  campaign_assistance_method_id   uuid        references public.campaign_assistance_methods(id),
+  action                          text        not null check (action in ('viewed', 'copied')),
+  ip_hash                         text,
+  user_agent                      text,
+  created_at                      timestamptz not null default now()
+);
+
+create index if not exists idx_campaigns_public_visibility
+  on public.campaigns(verified, archived_at, deleted_at);
+create index if not exists idx_campaigns_status
+  on public.campaigns(status);
+create index if not exists idx_campaigns_created_at
+  on public.campaigns(created_at desc);
+create index if not exists idx_campaign_cases_campaign_id
+  on public.campaign_cases(campaign_id) where deleted_at is null;
+create index if not exists idx_campaign_cases_case_id
+  on public.campaign_cases(case_id);
+create index if not exists idx_campaign_contributions_campaign_status
+  on public.campaign_contributions(campaign_id, status) where deleted_at is null;
+create index if not exists idx_campaign_am_access_logs_campaign_id
+  on public.campaign_assistance_method_access_logs(campaign_id, created_at desc);
+
+create or replace function public.sync_campaign_raised_amount()
+returns trigger language plpgsql as $$
+declare target_campaign_id uuid;
+begin
+  target_campaign_id := case tg_op when 'DELETE' then old.campaign_id else new.campaign_id end;
+  update public.campaigns
+  set raised_amount_usd = (
+    select coalesce(sum(amount_usd), 0)
+    from public.campaign_contributions
+    where campaign_id = target_campaign_id and status = 'verified' and deleted_at is null
+  )
+  where id = target_campaign_id;
+  return null;
+end; $$;
+
+drop trigger if exists sync_raised_amount on public.campaign_contributions;
+create trigger sync_raised_amount
+  after insert or update or delete on public.campaign_contributions
+  for each row execute function public.sync_campaign_raised_amount();

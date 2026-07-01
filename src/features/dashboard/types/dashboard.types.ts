@@ -11,8 +11,8 @@ export interface RecentDashboardCase {
   publicCode: string
   fullName: string
   status: 'active' | 'archived'
-  city: string
-  state: string
+  city: string | null
+  state: string | null
   createdAt: string
 }
 
