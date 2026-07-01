@@ -32,11 +32,28 @@ export async function getSession(): Promise<Session | null> {
   return { user, profile }
 }
 
-/** True when the session belongs to an active helper or admin. */
+/** True when the session belongs to any active internal role. */
 export function isActiveHelperOrAdmin(session: Session | null): session is Session {
   if (!session) return false
   return (
     session.profile.status === 'active' &&
-    (session.profile.role === 'helper' || session.profile.role === 'admin')
+    (session.profile.role === 'helper' ||
+      session.profile.role === 'campaign_admin' ||
+      session.profile.role === 'admin')
   )
+}
+
+/** True when the session belongs to an active campaign_admin or admin. */
+export function isActiveCampaignAdminOrAdmin(session: Session | null): session is Session {
+  if (!session) return false
+  return (
+    session.profile.status === 'active' &&
+    (session.profile.role === 'campaign_admin' || session.profile.role === 'admin')
+  )
+}
+
+/** True when the session belongs to an active helper (not admin). */
+export function isActiveHelper(session: Session | null): boolean {
+  if (!session) return false
+  return session.profile.status === 'active' && session.profile.role === 'helper'
 }
