@@ -3,12 +3,13 @@
 import { useTransition, useState, useRef, useEffect } from 'react'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus, Trash2, Loader2, UserPlus, X, Check, Search, Upload, Pencil, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, Loader2, UserPlus, X, Check, Search, Upload, Pencil, ChevronRight, AlertTriangle } from 'lucide-react'
 import {
   addCampaignMemberAction,
   updateCampaignMemberAction,
   getCampaignMemberDetailAction,
   removeCampaignMemberAction,
+  deleteAllCampaignMembersAction,
   toggleNeedPurchasedAction,
   bulkAddCampaignMembersAction,
 } from '../actions/campaigns.actions'
@@ -24,6 +25,8 @@ interface CampaignMembersManagerProps {
   initialMembers: PublicCampaignMember[]
   needCategories: NeedCategory[]
   readOnly?: boolean
+  /** Admin-only: enables the "delete all members" purge. */
+  canPurge?: boolean
 }
 
 function NeedCategoryCombobox({
@@ -160,6 +163,7 @@ export function CampaignMembersManager({
   initialMembers,
   needCategories,
   readOnly = false,
+  canPurge = false,
 }: CampaignMembersManagerProps) {
   const [members, setMembers] = useState(initialMembers)
   const [categories, setCategories] = useState<NeedCategory[]>(needCategories)
@@ -168,6 +172,26 @@ export function CampaignMembersManager({
   const [selectedMember, setSelectedMember] = useState<PublicCampaignMember | null>(null)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+
+  // Purga total (admin)
+  const [showPurgeModal, setShowPurgeModal] = useState(false)
+  const [purgeText, setPurgeText] = useState('')
+  const [isPurging, setIsPurging] = useState(false)
+  const [purgeError, setPurgeError] = useState<string | null>(null)
+
+  function handlePurge() {
+    if (purgeText !== 'CONFIRMAR') return
+    setIsPurging(true)
+    setPurgeError(null)
+    void (async () => {
+      const result = await deleteAllCampaignMembersAction(campaignId, purgeText)
+      setIsPurging(false)
+      if (!result.success) { setPurgeError(result.error); return }
+      setMembers([])
+      setShowPurgeModal(false)
+      setPurgeText('')
+    })()
+  }
 
   // Bulk import state
   const [showBulkModal, setShowBulkModal] = useState(false)
@@ -399,12 +423,78 @@ export function CampaignMembersManager({
               <UserPlus className="size-3.5" />
               Agregar
             </button>
+            {canPurge && members.length > 0 && (
+              <button
+                type="button"
+                onClick={() => { setShowPurgeModal(true); setPurgeText(''); setPurgeError(null) }}
+                className="border-destructive/40 text-destructive hover:bg-destructive/10 inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors"
+              >
+                <Trash2 className="size-3.5" />
+                Borrar todos
+              </button>
+            )}
           </div>
         )}
       </div>
 
       {error && (
         <div className="bg-destructive/10 text-destructive mb-4 rounded-xl p-3 text-sm">{error}</div>
+      )}
+
+      {showPurgeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-background border-border flex w-full max-w-md flex-col gap-4 rounded-2xl border p-6 shadow-xl">
+            <div className="flex items-start gap-3">
+              <div className="bg-destructive/10 flex size-9 shrink-0 items-center justify-center rounded-xl">
+                <AlertTriangle className="text-destructive size-5" />
+              </div>
+              <div>
+                <h3 className="text-foreground font-display font-semibold">Borrar todos los miembros</h3>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Se eliminarán <strong>{members.length}</strong> miembro(s) con sus necesidades y datos
+                  de forma <strong>permanente</strong>. Esta acción no se puede deshacer.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-foreground text-sm">
+                Escribe <span className="text-destructive font-mono font-semibold">CONFIRMAR</span> para
+                proceder:
+              </label>
+              <input
+                type="text"
+                value={purgeText}
+                onChange={(e) => setPurgeText(e.target.value)}
+                placeholder="CONFIRMAR"
+                autoFocus
+                className="border-input bg-background focus-visible:ring-destructive/50 rounded-lg border px-3 py-2 font-mono text-sm focus:outline-none focus-visible:ring-2"
+              />
+            </div>
+
+            {purgeError && <p className="text-destructive text-sm">{purgeError}</p>}
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => { setShowPurgeModal(false); setPurgeText('') }}
+                disabled={isPurging}
+                className="border-border text-foreground hover:bg-muted rounded-xl border px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handlePurge}
+                disabled={isPurging || purgeText !== 'CONFIRMAR'}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isPurging && <Loader2 className="size-3.5 animate-spin" />}
+                Borrar definitivamente
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showForm && !readOnly && (

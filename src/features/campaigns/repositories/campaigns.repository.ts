@@ -481,6 +481,52 @@ export class CampaignsRepository {
     if (error) throw new Error(`[CampaignsRepository.removeMember] ${error.message}`)
   }
 
+  /**
+   * Borrado COMPLETO de todos los miembros de una campaña (hard delete).
+   * Elimina needs, links, datos privados y los propios casos — no queda nada.
+   */
+  async deleteAllMembers(campaignId: string): Promise<{ deleted: number }> {
+    // Todos los links de la campaña (incluye soft-deleted: purgamos todo).
+    const { data: links, error: linksErr } = await this.db
+      .from('campaign_cases')
+      .select('id, case_id')
+      .eq('campaign_id', campaignId)
+    if (linksErr) throw new Error(`[deleteAllMembers - links] ${linksErr.message}`)
+
+    const rows = links ?? []
+    if (rows.length === 0) return { deleted: 0 }
+
+    const campaignCaseIds = rows.map((r) => r.id)
+    const caseIds = rows.map((r) => r.case_id)
+
+    // 1. Necesidades (FK → campaign_cases).
+    const { error: needsErr } = await this.db
+      .from('campaign_member_needs')
+      .delete()
+      .in('campaign_case_id', campaignCaseIds)
+    if (needsErr) throw new Error(`[deleteAllMembers - needs] ${needsErr.message}`)
+
+    // 2. Links campaña↔caso.
+    const { error: ccErr } = await this.db
+      .from('campaign_cases')
+      .delete()
+      .eq('campaign_id', campaignId)
+    if (ccErr) throw new Error(`[deleteAllMembers - campaign_cases] ${ccErr.message}`)
+
+    // 3. Datos privados de los casos.
+    const { error: pdErr } = await this.db
+      .from('case_private_data')
+      .delete()
+      .in('case_id', caseIds)
+    if (pdErr) throw new Error(`[deleteAllMembers - private_data] ${pdErr.message}`)
+
+    // 4. Los casos.
+    const { error: casesErr } = await this.db.from('cases').delete().in('id', caseIds)
+    if (casesErr) throw new Error(`[deleteAllMembers - cases] ${casesErr.message}`)
+
+    return { deleted: caseIds.length }
+  }
+
   async toggleNeedPurchased(needId: string, purchased: boolean): Promise<string | null> {
     const purchased_at = purchased ? new Date().toISOString() : null
     const { error } = await this.db

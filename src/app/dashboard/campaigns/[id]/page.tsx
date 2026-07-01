@@ -13,6 +13,7 @@ export default async function CampaignDetailPage({ params }: CampaignPageProps) 
   const { id } = await params
   const { profile } = await requireAuth()
   const isCampaignAdminOrAdmin = profile.role === 'admin' || profile.role === 'campaign_admin'
+  const isAdmin = profile.role === 'admin'
 
   const client = await createServerSupabaseClient()
   const repo = createCampaignsRepository(client)
@@ -46,6 +47,7 @@ export default async function CampaignDetailPage({ params }: CampaignPageProps) 
       images={images}
       progressPct={progressPct}
       isCampaignAdminOrAdmin={isCampaignAdminOrAdmin}
+      isAdmin={isAdmin}
     />
   )
 }
