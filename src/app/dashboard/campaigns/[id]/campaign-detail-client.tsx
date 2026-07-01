@@ -8,6 +8,7 @@ import { CampaignProgressBar } from '@/features/campaigns/components/campaign-pr
 import { CampaignMembersManager } from '@/features/campaigns/components/campaign-members-manager'
 import { ContributionsManager } from '@/features/campaigns/components/contributions-manager'
 import { CampaignAssistanceMethodsManager } from '@/features/campaigns/components/campaign-assistance-methods-manager'
+import { CampaignImagesManager } from '@/features/campaigns/components/campaign-images-manager'
 import { ArchiveCampaignModal } from '@/features/campaigns/components/archive-campaign-modal'
 import { updateCampaignStatusAction } from '@/features/campaigns/actions/campaigns.actions'
 import { CAMPAIGN_STATUSES, CAMPAIGN_STATUS_LABELS } from '@/shared/constants'
@@ -15,6 +16,7 @@ import type { Campaign, CampaignAssistanceMethod, NeedCategory } from '@/shared/
 import type {
   PublicCampaignMember,
   ContributionWithCreator,
+  CampaignImage,
 } from '@/features/campaigns/types/campaigns.types'
 
 interface CampaignDetailClientProps {
@@ -23,6 +25,7 @@ interface CampaignDetailClientProps {
   contributions: ContributionWithCreator[]
   assistanceMethods: CampaignAssistanceMethod[]
   needCategories: NeedCategory[]
+  images: CampaignImage[]
   progressPct: number
   isCampaignAdminOrAdmin: boolean
 }
@@ -33,6 +36,7 @@ export function CampaignDetailClient({
   contributions,
   assistanceMethods,
   needCategories,
+  images,
   progressPct,
   isCampaignAdminOrAdmin,
 }: CampaignDetailClientProps) {
@@ -155,6 +159,14 @@ export function CampaignDetailClient({
         <CampaignAssistanceMethodsManager
           campaignId={campaign.id}
           initialMethods={assistanceMethods}
+          readOnly={isArchived || !isCampaignAdminOrAdmin}
+        />
+      </div>
+
+      <div className="mt-6">
+        <CampaignImagesManager
+          campaignId={campaign.id}
+          initialImages={images}
           readOnly={isArchived || !isCampaignAdminOrAdmin}
         />
       </div>

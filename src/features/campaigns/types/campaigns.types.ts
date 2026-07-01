@@ -17,6 +17,13 @@ export interface PublicCampaignMember {
   needs: PublicCampaignMemberNeed[]
 }
 
+export interface CampaignImage {
+  id: string
+  storagePath: string
+  publicUrl: string
+  sortOrder: number
+}
+
 export interface PublicCampaign
   extends Pick<
     Campaign,
@@ -28,11 +35,14 @@ export interface PublicCampaign
     | 'raised_amount_usd'
     | 'status'
     | 'cover_image_path'
+    | 'helper_contact_url'
+    | 'helper_contact_note'
     | 'created_at'
     | 'updated_at'
   > {
   progressPct: number
   members: PublicCampaignMember[]
+  images: CampaignImage[]
 }
 
 export interface PublicCampaignFilters {
@@ -49,6 +59,8 @@ export interface CreateCampaignInput {
   title: string
   description?: string
   goalAmountUsd: number
+  helperContactUrl?: string | null
+  helperContactNote?: string | null
   createdByUserId: string
 }
 
@@ -57,6 +69,8 @@ export interface UpdateCampaignInput {
   title: string
   description?: string
   goalAmountUsd: number
+  helperContactUrl?: string | null
+  helperContactNote?: string | null
   updatedByUserId: string
 }
 

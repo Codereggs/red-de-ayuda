@@ -42,6 +42,8 @@ export default async function EditCampaignPage({ params }: EditCampaignPageProps
           title: campaign.title,
           description: campaign.description ?? undefined,
           goalAmountUsd: campaign.goal_amount_usd,
+          helperContactUrl: campaign.helper_contact_url ?? undefined,
+          helperContactNote: campaign.helper_contact_note ?? undefined,
         }}
         mode="edit"
       />

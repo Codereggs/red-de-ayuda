@@ -20,6 +20,12 @@ export async function getCampaignReceiptSignedUrl(path: string): Promise<string>
   return data.signedUrl
 }
 
+export async function deleteCampaignImageObject(path: string): Promise<void> {
+  const client = createServiceSupabaseClient()
+  const { error } = await client.storage.from(CAMPAIGN_COVERS_BUCKET).remove([path])
+  if (error) throw new Error(`[deleteCampaignImageObject] ${error.message}`)
+}
+
 export async function uploadCampaignCover(
   campaignId: string,
   file: File,

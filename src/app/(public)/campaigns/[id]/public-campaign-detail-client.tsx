@@ -5,7 +5,7 @@ import { CampaignProgressBar } from '@/features/campaigns/components/campaign-pr
 import { CampaignStatusBadge } from '@/features/campaigns/components/campaign-status-badge'
 import type { PublicCampaign } from '@/features/campaigns/types/campaigns.types'
 import { RESPONSIBLE_USE_TEXT } from '@/shared/constants'
-import { Eye } from 'lucide-react'
+import { Eye, X } from 'lucide-react'
 import type { CampaignAssistanceMethod } from '@/shared/types/database.types'
 
 interface PublicCampaignDetailClientProps {
@@ -28,6 +28,7 @@ export function PublicCampaignDetailClient({
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [revealed, setRevealed] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   function handleReveal() {
     setError(null)
@@ -69,6 +70,47 @@ export function PublicCampaignDetailClient({
           progressPct={campaign.progressPct}
         />
       </div>
+
+      {campaign.helper_contact_url && (
+        <section className="bg-primary/5 border-primary/20 rounded-2xl border p-6">
+          <h2 className="font-display text-foreground text-base font-medium">
+            ¿Quieres sumarte como helper?
+          </h2>
+          {campaign.helper_contact_note && (
+            <p className="text-muted-foreground mt-2 text-sm">{campaign.helper_contact_note}</p>
+          )}
+          <a
+            href={campaign.helper_contact_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 mt-4 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors"
+          >
+            Solicitar acceso
+          </a>
+        </section>
+      )}
+
+      {campaign.images.length > 0 && (
+        <section className="bg-card border-border rounded-2xl border p-6">
+          <h2 className="font-display text-foreground mb-4 text-base font-medium">
+            Galería ({campaign.images.length})
+          </h2>
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            {campaign.images.map((img) => (
+              <li key={img.id} className="aspect-square overflow-hidden rounded-xl">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={img.publicUrl}
+                  alt="Imagen de la campaña"
+                  loading="lazy"
+                  onClick={() => setPreviewUrl(img.publicUrl)}
+                  className="size-full cursor-pointer object-cover transition-transform hover:scale-105"
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {campaign.members.length > 0 && (
         <section className="bg-card border-border rounded-2xl border p-6">
@@ -203,6 +245,29 @@ export function PublicCampaignDetailClient({
             <p className="text-muted-foreground text-sm">No hay métodos de pago configurados.</p>
           )}
         </section>
+      )}
+
+      {previewUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setPreviewUrl(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setPreviewUrl(null)}
+            className="absolute right-4 top-4 text-white/80 hover:text-white"
+            aria-label="Cerrar"
+          >
+            <X className="size-6" />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={previewUrl}
+            alt="Imagen de la campaña"
+            className="max-h-[90vh] max-w-full rounded-xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
       )}
     </div>
   )
