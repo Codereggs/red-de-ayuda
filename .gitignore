@@ -52,3 +52,12 @@ next-env.d.ts
 
 # Misc
 .vercel
+
+# Package managers
+package-lock.json
+yarn.lock
+pnpm-debug.log
+.pnpm-debug.log
+
+# Zips/Archives
+*.zip
