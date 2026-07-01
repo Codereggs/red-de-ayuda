@@ -1,27 +1,29 @@
 import { APP_NAME } from '@/shared/constants'
-import { PublicCaseGrid } from '@/features/cases/components/public-case-grid'
-import { getSession, isActiveHelperOrAdmin } from '@/shared/lib/auth/get-session'
+import { createServerSupabaseClient } from '@/shared/lib/supabase/server'
+import { createCampaignsRepository } from '@/features/campaigns/repositories/campaigns.repository'
+import { PublicCampaignGrid } from '@/features/campaigns/components/public-campaign-grid'
 
 export const metadata = {
-  title: `${APP_NAME} — Registro verificado de ayuda`,
+  title: `${APP_NAME} — Campañas de ayuda`,
 }
 
 export default async function HomePage() {
-  const session = await getSession()
-  const isHelper = isActiveHelperOrAdmin(session)
+  const client = await createServerSupabaseClient()
+  const repo = createCampaignsRepository(client)
+  const result = await repo.listPublic({})
+  const campaigns = result.data
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <div className="mb-8">
         <h1 className="font-display text-foreground text-3xl font-medium sm:text-4xl">
-          Casos activos
+          Campañas de ayuda
         </h1>
         <p className="text-muted-foreground mt-2 max-w-xl">
-          Personas y familias verificadas que necesitan ayuda. Los datos de contacto se muestran
-          tras confirmar su uso responsable.
+          Jornadas de recaudación verificadas. Tu aporte ayuda a múltiples familias a la vez.
         </p>
       </div>
-      <PublicCaseGrid isHelper={isHelper} />
+      <PublicCampaignGrid campaigns={campaigns} />
     </main>
   )
 }
