@@ -30,19 +30,19 @@ export default async function EditCasePage({ params }: EditCasePageProps) {
   const defaultValues: Partial<CreateOrUpdateCaseValues> = {
     fullName: caseRow.full_name,
     caseType: caseRow.case_type,
-    shortDescription: caseRow.short_description,
-    publicContactPlace: caseRow.public_contact_place,
-    country: caseRow.country,
-    state: caseRow.state,
-    city: caseRow.city,
+    shortDescription: caseRow.short_description ?? undefined,
+    publicContactPlace: caseRow.public_contact_place ?? undefined,
+    country: caseRow.country ?? undefined,
+    state: caseRow.state ?? undefined,
+    city: caseRow.city ?? undefined,
     publicNotes: caseRow.public_notes ?? undefined,
     privateData: privateData
       ? {
-          idNumber: privateData.id_number,
+          idNumber: privateData.id_number ?? '',
           birthDate: privateData.birth_date ?? undefined,
-          previousFullAddress: privateData.previous_full_address,
-          currentFullAddress: privateData.current_full_address,
-          verificationNotes: privateData.verification_notes,
+          previousFullAddress: privateData.previous_full_address ?? '',
+          currentFullAddress: privateData.current_full_address ?? '',
+          verificationNotes: privateData.verification_notes ?? '',
           privateNotes: privateData.private_notes ?? undefined,
         }
       : undefined,
