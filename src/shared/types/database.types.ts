@@ -567,6 +567,12 @@ export type Database = {
           notes: string | null
           country_code: string
           alias: string | null
+          document_type: string | null
+          address_country: string | null
+          address_state: string | null
+          address_city: string | null
+          address_line: string | null
+          purpose: string | null
           created_at: string
           updated_at: string
           deleted_at: string | null
@@ -587,6 +593,12 @@ export type Database = {
           notes?: string | null
           country_code?: string
           alias?: string | null
+          document_type?: string | null
+          address_country?: string | null
+          address_state?: string | null
+          address_city?: string | null
+          address_line?: string | null
+          purpose?: string | null
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
@@ -605,6 +617,12 @@ export type Database = {
           notes?: string | null
           country_code?: string
           alias?: string | null
+          document_type?: string | null
+          address_country?: string | null
+          address_state?: string | null
+          address_city?: string | null
+          address_line?: string | null
+          purpose?: string | null
           deleted_at?: string | null
           updated_at?: string
         }
