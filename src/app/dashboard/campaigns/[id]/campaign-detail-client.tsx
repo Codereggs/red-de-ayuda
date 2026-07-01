@@ -28,6 +28,7 @@ interface CampaignDetailClientProps {
   images: CampaignImage[]
   progressPct: number
   isCampaignAdminOrAdmin: boolean
+  isAdmin: boolean
 }
 
 export function CampaignDetailClient({
@@ -39,6 +40,7 @@ export function CampaignDetailClient({
   images,
   progressPct,
   isCampaignAdminOrAdmin,
+  isAdmin,
 }: CampaignDetailClientProps) {
   const isArchived = !!campaign.archived_at
   const [showArchive, setShowArchive] = useState(false)
@@ -155,6 +157,7 @@ export function CampaignDetailClient({
           initialMembers={members}
           needCategories={needCategories}
           readOnly={isArchived || !isCampaignAdminOrAdmin}
+          canPurge={isAdmin && !isArchived}
         />
         <CampaignAssistanceMethodsManager
           campaignId={campaign.id}

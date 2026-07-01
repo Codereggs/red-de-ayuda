@@ -1,4 +1,4 @@
-export const APP_NAME = 'Red de Ayuda'
+export const APP_NAME = 'Cadena de Ayuda'
 export const PUBLIC_CODE_PREFIX = 'RA'
 export const DEFAULT_COUNTRY = 'Venezuela'
 

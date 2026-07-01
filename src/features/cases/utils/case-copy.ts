@@ -3,7 +3,7 @@ import type { PublicCase } from '../types/cases.types'
 
 function caseHeader(caseData: PublicCase): string[] {
   return [
-    'Caso verificado en Red de Ayuda',
+    'Caso verificado en Cadena de Ayuda',
     '',
     `Código: ${caseData.public_code}`,
     `Nombre: ${caseData.full_name}`,

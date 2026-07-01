@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
-import { requireAuth, requireCampaignAdminOrAdmin } from '@/shared/lib/auth/guards'
+import { requireAuth, requireAdmin, requireCampaignAdminOrAdmin } from '@/shared/lib/auth/guards'
 import { createServerSupabaseClient } from '@/shared/lib/supabase/server'
 import { createCampaignsRepository } from '../repositories/campaigns.repository'
 import {
@@ -364,6 +364,31 @@ export async function getCampaignMemberDetailAction(
     return { success: true, data: { idNumber: detail.idNumber, privateNotes: detail.privateNotes } }
   } catch {
     return { success: false, error: 'Error al cargar el detalle del miembro.' }
+  }
+}
+
+export async function deleteAllCampaignMembersAction(
+  campaignId: string,
+  confirmation: string,
+): Promise<ActionResult<{ deleted: number }>> {
+  // Borrado total y destructivo → solo admin.
+  await requireAdmin()
+
+  const parsedId = idSchema.safeParse(campaignId)
+  if (!parsedId.success) return { success: false, error: 'ID de campaña inválido.' }
+  if (confirmation !== 'CONFIRMAR') {
+    return { success: false, error: 'Debes escribir CONFIRMAR para proceder.' }
+  }
+
+  try {
+    const client = await createServerSupabaseClient()
+    const repo = createCampaignsRepository(client)
+    const result = await repo.deleteAllMembers(campaignId)
+    revalidateCampaign(campaignId)
+    return { success: true, data: result }
+  } catch (err) {
+    console.error('[deleteAllCampaignMembersAction]', err)
+    return { success: false, error: err instanceof Error ? err.message : 'Error al borrar los miembros.' }
   }
 }
 

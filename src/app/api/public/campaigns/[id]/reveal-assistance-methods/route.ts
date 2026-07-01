@@ -44,6 +44,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return Response.json({ error: 'Campaña no encontrada.' }, { status: 404 })
     }
 
+    // Meta alcanzada → ya no se muestran los métodos de pago.
+    if (
+      publicCampaign.goal_amount_usd > 0 &&
+      publicCampaign.raised_amount_usd >= publicCampaign.goal_amount_usd
+    ) {
+      return Response.json(
+        { error: 'Esta campaña ya alcanzó su meta. ¡Gracias! Apoya otra campaña activa.' },
+        { status: 409 },
+      )
+    }
+
     const assistanceMethods = await repo.revealAssistanceMethods(campaignId)
 
     const logs: AccessLogInsert[] =

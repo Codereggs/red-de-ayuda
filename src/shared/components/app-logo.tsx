@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { APP_NAME } from '@/shared/constants'
+import { CountryFlag } from '@/shared/components/country-flag'
 
 interface AppLogoProps {
   href?: string
@@ -28,7 +29,14 @@ export function AppLogo({ href = '/', size = 'md', showName = true }: AppLogoPro
         priority
       />
       {showName && (
-        <span className="font-display text-lg font-medium">{APP_NAME}</span>
+        <>
+          <span className="font-display text-lg font-medium">{APP_NAME}</span>
+          <CountryFlag
+            code="VE"
+            title="Venezuela"
+            className="h-4 w-6 shrink-0 rounded-sm shadow-sm"
+          />
+        </>
       )}
     </span>
   )

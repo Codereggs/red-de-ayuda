@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { CampaignProgressBar } from '@/features/campaigns/components/campaign-progress-bar'
 import { CampaignStatusBadge } from '@/features/campaigns/components/campaign-status-badge'
 import type { PublicCampaign } from '@/features/campaigns/types/campaigns.types'
@@ -29,6 +30,8 @@ export function PublicCampaignDetailClient({
   const [error, setError] = useState<string | null>(null)
   const [revealed, setRevealed] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const goalReached =
+    campaign.goal_amount_usd > 0 && campaign.raised_amount_usd >= campaign.goal_amount_usd
 
   function handleReveal() {
     setError(null)
@@ -149,7 +152,26 @@ export function PublicCampaignDetailClient({
         </section>
       )}
 
-      {isHelper && (
+      {isHelper && goalReached && (
+        <section className="bg-primary/5 border-primary/20 rounded-2xl border p-6 text-center">
+          <p className="text-2xl" aria-hidden>🎉</p>
+          <h2 className="font-display text-foreground mt-2 text-lg font-medium">
+            ¡Meta completada!
+          </h2>
+          <p className="text-muted-foreground mx-auto mt-2 max-w-md text-sm">
+            Esta campaña ya alcanzó su objetivo de recaudación. Gracias por tu solidaridad y tu
+            aporte 💚 Te invitamos a apoyar otra campaña activa que aún necesita ayuda.
+          </p>
+          <Link
+            href="/campaigns"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 mt-4 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors"
+          >
+            Ver otras campañas
+          </Link>
+        </section>
+      )}
+
+      {isHelper && !goalReached && (
         <section className="bg-card border-border rounded-2xl border p-6">
           <h2 className="font-display text-foreground mb-3 text-base font-medium">
             Datos de pago
