@@ -143,8 +143,10 @@ export function PublicCampaignDetailClient({
                     </div>
                     {m.id_number && (
                       <div>
-                        <dt className="text-muted-foreground">Cédula</dt>
-                        <dd className="text-foreground font-mono">{m.id_number}</dd>
+                        <dt className="text-muted-foreground">Documento</dt>
+                        <dd className="text-foreground font-mono">
+                          {m.document_type ? `${m.document_type}${m.id_number}` : m.id_number}
+                        </dd>
                       </div>
                     )}
                     {m.phone && (
@@ -159,10 +161,32 @@ export function PublicCampaignDetailClient({
                         <dd className="text-foreground">{m.bank_name}</dd>
                       </div>
                     )}
+                    {m.account_type && (
+                      <div>
+                        <dt className="text-muted-foreground">Tipo de cuenta</dt>
+                        <dd className="text-foreground capitalize">{m.account_type}</dd>
+                      </div>
+                    )}
                     {m.account_number && (
                       <div>
                         <dt className="text-muted-foreground">Cuenta</dt>
                         <dd className="text-foreground font-mono">{m.account_number}</dd>
+                      </div>
+                    )}
+                    {(m.address_line || m.address_city || m.address_state || m.address_country) && (
+                      <div className="col-span-2">
+                        <dt className="text-muted-foreground">Dirección</dt>
+                        <dd className="text-foreground">
+                          {[m.address_line, m.address_city, m.address_state, m.address_country]
+                            .filter(Boolean)
+                            .join(', ')}
+                        </dd>
+                      </div>
+                    )}
+                    {m.purpose && (
+                      <div className="col-span-2">
+                        <dt className="text-muted-foreground">Propósito</dt>
+                        <dd className="text-foreground">{m.purpose}</dd>
                       </div>
                     )}
                     {m.notes && (

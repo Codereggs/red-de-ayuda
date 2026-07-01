@@ -14,7 +14,8 @@ function formatDate(dateStr: string) {
 }
 
 export default async function CasesPage() {
-  await requireAuth()
+  const { profile } = await requireAuth()
+  const canManage = profile.role === 'admin' || profile.role === 'campaign_admin'
 
   const client = await createServerSupabaseClient()
   const repo = createCasesRepository(client)
@@ -30,25 +31,29 @@ export default async function CasesPage() {
             {cases.length} {cases.length === 1 ? 'caso' : 'casos'} cargados
           </p>
         </div>
-        <Link
-          href="/dashboard/cases/new"
-          className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors"
-        >
-          <Plus className="size-4" />
-          Nuevo caso
-        </Link>
+        {canManage && (
+          <Link
+            href="/dashboard/cases/new"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors"
+          >
+            <Plus className="size-4" />
+            Nuevo caso
+          </Link>
+        )}
       </div>
 
       {cases.length === 0 ? (
         <div className="bg-card border-border rounded-2xl border p-12 text-center">
           <p className="text-muted-foreground text-sm">No hay casos registrados aún.</p>
-          <Link
-            href="/dashboard/cases/new"
-            className="text-primary mt-4 inline-flex items-center gap-1.5 text-sm font-medium hover:underline"
-          >
-            <Plus className="size-4" />
-            Crear el primer caso
-          </Link>
+          {canManage && (
+            <Link
+              href="/dashboard/cases/new"
+              className="text-primary mt-4 inline-flex items-center gap-1.5 text-sm font-medium hover:underline"
+            >
+              <Plus className="size-4" />
+              Crear el primer caso
+            </Link>
+          )}
         </div>
       ) : (
         <div className="bg-card border-border overflow-hidden rounded-2xl border">
