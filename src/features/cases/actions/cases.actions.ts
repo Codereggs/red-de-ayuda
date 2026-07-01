@@ -1,14 +1,14 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { requireAuth } from '@/shared/lib/auth/guards'
+import { requireCampaignAdminOrAdmin } from '@/shared/lib/auth/guards'
 import { createServerSupabaseClient } from '@/shared/lib/supabase/server'
 import { createCasesRepository } from '../repositories/cases.repository'
 import { createOrUpdateCaseSchema, archiveCaseSchema } from '../schemas/cases.schema'
 import type { ActionResult } from '@/shared/types/action-result'
 
 export async function createCaseAction(rawData: unknown): Promise<ActionResult<void>> {
-  const { profile } = await requireAuth()
+  const { profile } = await requireCampaignAdminOrAdmin()
 
   const parsed = createOrUpdateCaseSchema.safeParse(rawData)
   if (!parsed.success) {
@@ -50,7 +50,7 @@ export async function updateCaseAction(
   caseId: string,
   rawData: unknown,
 ): Promise<ActionResult<void>> {
-  const { profile } = await requireAuth()
+  const { profile } = await requireCampaignAdminOrAdmin()
 
   const parsed = createOrUpdateCaseSchema.safeParse(rawData)
   if (!parsed.success) {
@@ -91,7 +91,7 @@ export async function archiveCaseAction(
   caseId: string,
   rawData: unknown,
 ): Promise<ActionResult<void>> {
-  const { profile } = await requireAuth()
+  const { profile } = await requireCampaignAdminOrAdmin()
 
   const parsed = archiveCaseSchema.safeParse(rawData)
   if (!parsed.success) {

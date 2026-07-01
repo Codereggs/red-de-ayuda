@@ -1,11 +1,11 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
-import { requireAuth } from '@/shared/lib/auth/guards'
+import { requireCampaignAdminOrAdmin } from '@/shared/lib/auth/guards'
 import { CaseForm } from '@/features/cases/components/case-form'
 import { createCaseAction } from '@/features/cases/actions/cases.actions'
 
 export default async function NewCasePage() {
-  await requireAuth()
+  await requireCampaignAdminOrAdmin()
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">

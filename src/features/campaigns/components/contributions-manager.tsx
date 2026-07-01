@@ -12,6 +12,7 @@ import {
 } from '../actions/campaigns.actions'
 import type { ContributionWithCreator } from '../types/campaigns.types'
 import type { CampaignContribution } from '@/shared/types/database.types'
+import { useSearchPager, SearchBox, Pager } from '@/shared/components/list-search-pager'
 
 interface ContributionsManagerProps {
   campaignId: string
@@ -86,8 +87,18 @@ export function ContributionsManager({
     window.open(result.data.url, '_blank', 'noopener,noreferrer')
   }
 
+  const pager = useSearchPager({
+    items: contributions,
+    pageSize: 3,
+    searchThreshold: 4,
+    filterFn: (c, q) =>
+      (c.contributor_name?.toLowerCase().includes(q) ?? false) ||
+      (c.reference?.toLowerCase().includes(q) ?? false) ||
+      String(c.amount_usd).includes(q),
+  })
+
   return (
-    <section className="bg-card border-border mt-6 rounded-2xl border p-6">
+    <section className="bg-card border-border rounded-2xl border p-6">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h2 className="font-display text-foreground text-base font-medium">
@@ -116,7 +127,18 @@ export function ContributionsManager({
       {contributions.length === 0 ? (
         <p className="text-muted-foreground text-sm">No hay aportes registrados aún.</p>
       ) : (
-        <div className="bg-card border-border overflow-hidden rounded-xl border">
+        <div className="flex flex-col gap-3">
+          {pager.showSearch && (
+            <SearchBox
+              value={pager.query}
+              onChange={pager.setQuery}
+              placeholder="Buscar por donante, referencia o monto…"
+            />
+          )}
+          {pager.filtered.length === 0 ? (
+            <p className="text-muted-foreground text-sm">Sin resultados para “{pager.query.trim()}”.</p>
+          ) : (
+          <div className="bg-card border-border overflow-hidden rounded-xl border">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-border bg-muted/40 border-b">
@@ -129,7 +151,7 @@ export function ContributionsManager({
               </tr>
             </thead>
             <tbody className="divide-border divide-y">
-              {contributions.map((c) => (
+              {pager.pageItems.map((c) => (
                 <tr key={c.id} className="hover:bg-muted/20 transition-colors">
                   <td className="text-muted-foreground px-4 py-3 font-mono text-xs">
                     {formatDate(c.transferred_at)}
@@ -203,6 +225,18 @@ export function ContributionsManager({
               ))}
             </tbody>
           </table>
+          </div>
+          )}
+          {pager.showPager && (
+            <Pager
+              page={pager.page}
+              totalPages={pager.totalPages}
+              start={pager.start}
+              pageSize={pager.pageSize}
+              total={pager.filtered.length}
+              onPageChange={pager.setPage}
+            />
+          )}
         </div>
       )}
 

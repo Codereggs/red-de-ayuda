@@ -35,7 +35,8 @@ function InfoRow({ label, value }: { label: string; value: string | null }) {
 
 export default async function CasePage({ params }: CasePageProps) {
   const { id } = await params
-  await requireAuth()
+  const { profile } = await requireAuth()
+  const canManage = profile.role === 'admin' || profile.role === 'campaign_admin'
 
   const client = await createServerSupabaseClient()
   const repo = createCasesRepository(client)
@@ -81,18 +82,20 @@ export default async function CasePage({ params }: CasePageProps) {
               )}
             </div>
           </div>
-          <div className="flex gap-2">
-            <Link
-              href={`/dashboard/cases/${id}/edit`}
-              className="border-border text-foreground hover:bg-muted inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-sm transition-colors"
-            >
-              <Pencil className="size-4" />
-              Editar
-            </Link>
-            {caseRow.status === 'active' && (
-              <CaseArchiveButton caseId={id} caseName={caseRow.full_name} />
-            )}
-          </div>
+          {canManage && (
+            <div className="flex gap-2">
+              <Link
+                href={`/dashboard/cases/${id}/edit`}
+                className="border-border text-foreground hover:bg-muted inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-sm transition-colors"
+              >
+                <Pencil className="size-4" />
+                Editar
+              </Link>
+              {caseRow.status === 'active' && (
+                <CaseArchiveButton caseId={id} caseName={caseRow.full_name} />
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -171,7 +174,7 @@ export default async function CasePage({ params }: CasePageProps) {
           caseId={id}
           initialNeeds={needs}
           initialCategories={needCategories}
-          readOnly={caseRow.status === 'archived'}
+          readOnly={caseRow.status === 'archived' || !canManage}
         />
       </div>
 
@@ -180,7 +183,7 @@ export default async function CasePage({ params }: CasePageProps) {
         initialRecords={helpRecords}
         initialHelpTypes={helpTypes}
         needs={needs}
-        readOnly={caseRow.status === 'archived'}
+        readOnly={caseRow.status === 'archived' || !canManage}
       />
 
       {caseRow.status === 'archived' && caseRow.archive_reason && (

@@ -66,6 +66,16 @@ export interface ArchiveCampaignInput {
   archivedByUserId: string
 }
 
+export interface BulkAddMembersInput {
+  campaignId: string
+  createdByUserId: string
+  members: {
+    fullName: string
+    idNumber?: string
+    needs: { categoryName: string; priceUsd: number }[]
+  }[]
+}
+
 export interface AddCampaignMemberInput {
   campaignId: string
   fullName: string
@@ -73,6 +83,22 @@ export interface AddCampaignMemberInput {
   privateNotes?: string
   createdByUserId: string
   needs: { needCategoryId: string; priceUsd: number }[]
+}
+
+export interface UpdateCampaignMemberInput {
+  campaignId: string
+  caseId: string
+  fullName: string
+  idNumber?: string
+  privateNotes?: string
+  needs: { needCategoryId: string; priceUsd: number }[]
+}
+
+/** Private member detail loaded for the dashboard (not exposed publicly). */
+export interface CampaignMemberDetail {
+  caseId: string
+  idNumber: string | null
+  privateNotes: string | null
 }
 
 export interface CreateContributionInput {
@@ -101,6 +127,12 @@ export interface CreateCampaignAssistanceMethodInput {
   accountType?: string
   alias?: string
   notes?: string
+  documentType?: string
+  addressCountry?: string
+  addressState?: string
+  addressCity?: string
+  addressLine?: string
+  purpose?: string
 }
 
 export interface UpdateCampaignAssistanceMethodInput
