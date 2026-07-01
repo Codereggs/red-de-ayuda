@@ -6,3 +6,9 @@ export interface UpdateProfileInput {
   role?: Profile['role']
   status?: Profile['status']
 }
+
+export interface CreateHelperInput {
+  fullName: string
+  email: string
+  password: string
+}
