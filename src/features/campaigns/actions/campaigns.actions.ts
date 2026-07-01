@@ -13,6 +13,7 @@ import {
   campaignMemberSchema,
   contributionFormSchema,
   campaignAssistanceMethodSchema,
+  bulkMemberJsonSchema,
 } from '../schemas/campaigns.schema'
 import type { ActionResult } from '@/shared/types/action-result'
 import type { Campaign, CampaignAssistanceMethod, CampaignContribution } from '@/shared/types/database.types'
@@ -144,6 +145,67 @@ export async function updateCampaignStatusAction(
   }
 }
 
+// ── Bulk import ───────────────────────────────────────────────────────────
+
+export async function bulkAddCampaignMembersAction(
+  campaignId: string,
+  rawJson: unknown,
+): Promise<ActionResult<{ added: number; newCategories: number }>> {
+  const { profile } = await requireCampaignAdminOrAdmin()
+
+  const parsedId = idSchema.safeParse(campaignId)
+  if (!parsedId.success) return { success: false, error: 'ID de campaña inválido.' }
+
+  const parsed = bulkMemberJsonSchema.safeParse(rawJson)
+  if (!parsed.success) {
+    return { success: false, error: `JSON inválido: ${parsed.error.issues[0]?.message ?? 'formato incorrecto'}` }
+  }
+
+  if (parsed.data.length === 0) return { success: false, error: 'El JSON no contiene miembros.' }
+
+  // Collect unique category names before calling repo (to report newCategories count)
+  const buildCategoryName = (medicine: string, dose: string) =>
+    dose.trim() ? `${medicine.trim()} ${dose.trim()}` : medicine.trim()
+
+  // Load existing categories to count how many will be created
+  const client = await createServerSupabaseClient()
+  const { data: existingCatsRaw } = await client
+    .from('need_categories')
+    .select('name')
+    .is('deleted_at', null)
+
+  const existingCats = existingCatsRaw as { name: string }[] | null
+  const existingNorm = new Set((existingCats ?? []).map((c) => c.name.trim().toLowerCase()))
+  const neededNames = [
+    ...new Set(
+      parsed.data.flatMap((m) =>
+        m.needs.map((n) => buildCategoryName(n.medicine, n.dose)),
+      ),
+    ),
+  ]
+  const newCategoriesCount = neededNames.filter((n) => !existingNorm.has(n.toLowerCase())).length
+
+  try {
+    const repo = createCampaignsRepository(client)
+    const { added } = await repo.bulkAddMembers({
+      campaignId,
+      createdByUserId: profile.id,
+      members: parsed.data.map((m) => ({
+        fullName: m.name,
+        idNumber: m.document != null ? String(m.document) : undefined,
+        needs: m.needs.map((n) => ({
+          categoryName: buildCategoryName(n.medicine, n.dose),
+          priceUsd: n.price ?? 0,
+        })),
+      })),
+    })
+    revalidateCampaign(campaignId)
+    return { success: true, data: { added, newCategories: newCategoriesCount } }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Error en la importación.' }
+  }
+}
+
 // ── Members ────────────────────────────────────────────────────────────────
 
 export async function addCampaignMemberAction(
@@ -180,6 +242,66 @@ export async function addCampaignMemberAction(
     return { success: true, data: { caseId } }
   } catch {
     return { success: false, error: 'Error al agregar el miembro. Intenta de nuevo.' }
+  }
+}
+
+export async function updateCampaignMemberAction(
+  campaignId: string,
+  caseId: string,
+  rawData: unknown,
+): Promise<ActionResult<void>> {
+  await requireCampaignAdminOrAdmin()
+
+  const parsedId = idSchema.safeParse(campaignId)
+  const parsedCaseId = idSchema.safeParse(caseId)
+  const parsed = campaignMemberSchema.safeParse(rawData)
+
+  if (!parsedId.success || !parsedCaseId.success || !parsed.success) {
+    return {
+      success: false,
+      error: 'Datos del miembro inválidos.',
+      fieldErrors: parsed.success
+        ? undefined
+        : (parsed.error.flatten().fieldErrors as Record<string, string[]>),
+    }
+  }
+
+  try {
+    const client = await createServerSupabaseClient()
+    const repo = createCampaignsRepository(client)
+    await repo.updateMember({
+      campaignId,
+      caseId,
+      fullName: parsed.data.fullName,
+      idNumber: parsed.data.idNumber,
+      privateNotes: parsed.data.privateNotes,
+      needs: parsed.data.needs,
+    })
+    revalidateCampaign(campaignId)
+    return { success: true, data: undefined }
+  } catch (err) {
+    console.error('[updateCampaignMemberAction]', err)
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Error al actualizar el miembro.',
+    }
+  }
+}
+
+export async function getCampaignMemberDetailAction(
+  campaignId: string,
+  caseId: string,
+): Promise<ActionResult<{ idNumber: string | null; privateNotes: string | null }>> {
+  // Lectura: helpers también pueden ver el detalle del miembro (no editan).
+  await requireAuth()
+
+  try {
+    const client = await createServerSupabaseClient()
+    const repo = createCampaignsRepository(client)
+    const detail = await repo.getMemberDetail(campaignId, caseId)
+    return { success: true, data: { idNumber: detail.idNumber, privateNotes: detail.privateNotes } }
+  } catch {
+    return { success: false, error: 'Error al cargar el detalle del miembro.' }
   }
 }
 
@@ -329,6 +451,8 @@ export async function createAssistanceMethodAction(
   try {
     const client = await createServerSupabaseClient()
     const repo = createCampaignsRepository(client)
+    // Solo puede existir un método principal por campaña.
+    if (parsed.data.isPrimary) await repo.clearPrimaryFlag(campaignId)
     const method = await repo.createAssistanceMethod({
       campaignId,
       countryCode: parsed.data.countryCode,
@@ -344,11 +468,21 @@ export async function createAssistanceMethodAction(
       accountType: parsed.data.accountType,
       alias: parsed.data.alias,
       notes: parsed.data.notes,
+      documentType: parsed.data.documentType,
+      addressCountry: parsed.data.addressCountry,
+      addressState: parsed.data.addressState,
+      addressCity: parsed.data.addressCity,
+      addressLine: parsed.data.addressLine,
+      purpose: parsed.data.purpose,
     })
     revalidatePath(`/dashboard/campaigns/${campaignId}`)
     return { success: true, data: method }
-  } catch {
-    return { success: false, error: 'Error al crear el método de pago.' }
+  } catch (err) {
+    console.error('[createAssistanceMethodAction]', err)
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Error al crear el método de pago.',
+    }
   }
 }
 
@@ -371,6 +505,8 @@ export async function updateAssistanceMethodAction(
   try {
     const client = await createServerSupabaseClient()
     const repo = createCampaignsRepository(client)
+    // Solo puede existir un método principal por campaña.
+    if (parsed.data.isPrimary) await repo.clearPrimaryFlag(campaignId, methodId)
     await repo.updateAssistanceMethod({
       methodId,
       countryCode: parsed.data.countryCode,
@@ -386,6 +522,12 @@ export async function updateAssistanceMethodAction(
       accountType: parsed.data.accountType,
       alias: parsed.data.alias,
       notes: parsed.data.notes,
+      documentType: parsed.data.documentType,
+      addressCountry: parsed.data.addressCountry,
+      addressState: parsed.data.addressState,
+      addressCity: parsed.data.addressCity,
+      addressLine: parsed.data.addressLine,
+      purpose: parsed.data.purpose,
     })
     revalidatePath(`/dashboard/campaigns/${campaignId}`)
     return { success: true, data: undefined }

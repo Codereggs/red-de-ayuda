@@ -13,6 +13,9 @@ import type {
   UpdateCampaignInput,
   ArchiveCampaignInput,
   AddCampaignMemberInput,
+  UpdateCampaignMemberInput,
+  CampaignMemberDetail,
+  BulkAddMembersInput,
   CreateContributionInput,
   CreateCampaignAssistanceMethodInput,
   UpdateCampaignAssistanceMethodInput,
@@ -263,6 +266,201 @@ export class CampaignsRepository {
     return caseId
   }
 
+  /** Load private detail (cédula, notas) for a campaign member. */
+  async getMemberDetail(campaignId: string, caseId: string): Promise<CampaignMemberDetail> {
+    // Ensure the case actually belongs to this campaign (active link).
+    const { data: link, error: linkErr } = await this.db
+      .from('campaign_cases')
+      .select('id')
+      .eq('campaign_id', campaignId)
+      .eq('case_id', caseId)
+      .is('deleted_at', null)
+      .maybeSingle()
+    if (linkErr) throw new Error(`[getMemberDetail - link] ${linkErr.message}`)
+    if (!link) throw new Error('[getMemberDetail] Miembro no pertenece a la campaña.')
+
+    const { data, error } = await this.db
+      .from('case_private_data')
+      .select('id_number, private_notes')
+      .eq('case_id', caseId)
+      .maybeSingle()
+    if (error) throw new Error(`[getMemberDetail] ${error.message}`)
+
+    return {
+      caseId,
+      idNumber: data?.id_number ?? null,
+      privateNotes: data?.private_notes ?? null,
+    }
+  }
+
+  async updateMember(input: UpdateCampaignMemberInput): Promise<void> {
+    // 1. Update the case name.
+    const { error: caseErr } = await this.db
+      .from('cases')
+      .update({ full_name: input.fullName })
+      .eq('id', input.caseId)
+    if (caseErr) throw new Error(`[updateMember - case] ${caseErr.message}`)
+
+    // 2. Upsert private data when provided (blank values are stored as null).
+    if (input.idNumber !== undefined || input.privateNotes !== undefined) {
+      const { error: pdErr } = await this.db.from('case_private_data').upsert(
+        {
+          case_id: input.caseId,
+          id_number: input.idNumber?.trim() ? input.idNumber.trim() : null,
+          private_notes: input.privateNotes?.trim() ? input.privateNotes.trim() : null,
+        },
+        { onConflict: 'case_id' },
+      )
+      if (pdErr) throw new Error(`[updateMember - private_data] ${pdErr.message}`)
+    }
+
+    // 3. Resolve the campaign_case link.
+    const { data: link, error: linkErr } = await this.db
+      .from('campaign_cases')
+      .select('id')
+      .eq('campaign_id', input.campaignId)
+      .eq('case_id', input.caseId)
+      .is('deleted_at', null)
+      .maybeSingle()
+    if (linkErr) throw new Error(`[updateMember - link] ${linkErr.message}`)
+    if (!link) throw new Error('[updateMember] Miembro no pertenece a la campaña.')
+    const campaignCaseId = link.id
+
+    // 4. Sync needs, preserving purchased_at by matching need_category_id.
+    const { data: existing, error: exErr } = await this.db
+      .from('campaign_member_needs')
+      .select('id, need_category_id')
+      .eq('campaign_case_id', campaignCaseId)
+    if (exErr) throw new Error(`[updateMember - load needs] ${exErr.message}`)
+
+    const pool = [...(existing ?? [])]
+    const consumed = new Set<string>()
+    const toUpdate: { id: string; price: number }[] = []
+    const toInsert: { campaign_case_id: string; need_category_id: string; price_usd: number }[] = []
+
+    for (const n of input.needs) {
+      const match = pool.find(
+        (e) => e.need_category_id === n.needCategoryId && !consumed.has(e.id),
+      )
+      if (match) {
+        consumed.add(match.id)
+        toUpdate.push({ id: match.id, price: n.priceUsd })
+      } else {
+        toInsert.push({
+          campaign_case_id: campaignCaseId,
+          need_category_id: n.needCategoryId,
+          price_usd: n.priceUsd,
+        })
+      }
+    }
+    const toDelete = (existing ?? []).filter((e) => !consumed.has(e.id)).map((e) => e.id)
+
+    for (const u of toUpdate) {
+      const { error } = await this.db
+        .from('campaign_member_needs')
+        .update({ price_usd: u.price })
+        .eq('id', u.id)
+      if (error) throw new Error(`[updateMember - update need] ${error.message}`)
+    }
+    if (toInsert.length > 0) {
+      const { error } = await this.db.from('campaign_member_needs').insert(toInsert)
+      if (error) throw new Error(`[updateMember - insert needs] ${error.message}`)
+    }
+    if (toDelete.length > 0) {
+      const { error } = await this.db.from('campaign_member_needs').delete().in('id', toDelete)
+      if (error) throw new Error(`[updateMember - delete needs] ${error.message}`)
+    }
+  }
+
+  async bulkAddMembers(input: BulkAddMembersInput): Promise<{ added: number }> {
+    const normalize = (s: string) => s.trim().toLowerCase()
+
+    // Collect unique category names needed
+    const neededNames = [
+      ...new Set(input.members.flatMap((m) => m.needs.map((n) => n.categoryName))),
+    ]
+
+    // Load ALL existing categories in one query → build lookup map
+    const { data: existingCats, error: catErr } = await this.db
+      .from('need_categories')
+      .select('id, name')
+      .is('deleted_at', null)
+    if (catErr) throw new Error(`[bulkAddMembers] load categories: ${catErr.message}`)
+
+    const catMap = new Map<string, string>()
+    for (const c of existingCats ?? []) catMap.set(normalize(c.name), c.id)
+
+    // Batch-create any missing categories in one INSERT
+    const missingNames = neededNames.filter((n) => !catMap.has(normalize(n)))
+    if (missingNames.length > 0) {
+      const { data: newCats, error: newCatErr } = await this.db
+        .from('need_categories')
+        .insert(missingNames.map((name) => ({ name, normalized_name: name.trim().toLowerCase() })))
+        .select('id, name')
+      if (newCatErr) throw new Error(`[bulkAddMembers] create categories: ${newCatErr.message}`)
+      for (const c of newCats ?? []) catMap.set(normalize(c.name), c.id)
+    }
+
+    // Batch-insert all cases in one INSERT
+    const { data: cases, error: casesErr } = await this.db
+      .from('cases')
+      .insert(
+        input.members.map((m) => ({
+          full_name: m.fullName,
+          case_type: 'person' as const,
+          verified: false,
+          created_by_user_id: input.createdByUserId,
+        })),
+      )
+      .select('id')
+    if (casesErr) throw new Error(`[bulkAddMembers] insert cases: ${casesErr.message}`)
+    const caseIds = (cases ?? []).map((c) => c.id)
+
+    // Batch-insert private data for members that have an idNumber
+    const privateDataRows = input.members
+      .map((m, i) => (m.idNumber ? { case_id: caseIds[i], id_number: m.idNumber } : null))
+      .filter((r): r is { case_id: string; id_number: string } => r !== null)
+    if (privateDataRows.length > 0) {
+      const { error: pdErr } = await this.db.from('case_private_data').insert(privateDataRows)
+      if (pdErr) throw new Error(`[bulkAddMembers] insert private_data: ${pdErr.message}`)
+    }
+
+    // Batch-insert campaign_cases in one INSERT
+    const { data: links, error: linksErr } = await this.db
+      .from('campaign_cases')
+      .insert(
+        caseIds.map((caseId) => ({
+          campaign_id: input.campaignId,
+          case_id: caseId,
+          created_by_user_id: input.createdByUserId,
+        })),
+      )
+      .select('id')
+    if (linksErr) throw new Error(`[bulkAddMembers] insert campaign_cases: ${linksErr.message}`)
+    const linkIds = (links ?? []).map((l) => l.id)
+
+    // Batch-insert all campaign_member_needs in one INSERT
+    const needRows = input.members.flatMap((m, i) =>
+      m.needs
+        .map((n) => {
+          const catId = catMap.get(normalize(n.categoryName))
+          if (!catId) return null
+          return {
+            campaign_case_id: linkIds[i],
+            need_category_id: catId,
+            price_usd: n.priceUsd,
+          }
+        })
+        .filter((r): r is NonNullable<typeof r> => r !== null),
+    )
+    if (needRows.length > 0) {
+      const { error: needsErr } = await this.db.from('campaign_member_needs').insert(needRows)
+      if (needsErr) throw new Error(`[bulkAddMembers] insert needs: ${needsErr.message}`)
+    }
+
+    return { added: caseIds.length }
+  }
+
   async removeMember(campaignId: string, caseId: string): Promise<void> {
     const { error } = await this.db
       .from('campaign_cases')
@@ -407,9 +605,25 @@ export class CampaignsRepository {
       .eq('campaign_id', campaignId)
       .is('deleted_at', null)
       .order('is_primary', { ascending: false })
+      .order('created_at', { ascending: true })
 
     if (error) throw new Error(`[CampaignsRepository.listAssistanceMethods] ${error.message}`)
     return (data ?? []) as CampaignAssistanceMethod[]
+  }
+
+  /** Unset is_primary on all active methods of a campaign (optionally except one). */
+  async clearPrimaryFlag(campaignId: string, exceptId?: string): Promise<void> {
+    let query = this.db
+      .from('campaign_assistance_methods')
+      .update({ is_primary: false })
+      .eq('campaign_id', campaignId)
+      .eq('is_primary', true)
+      .is('deleted_at', null)
+
+    if (exceptId) query = query.neq('id', exceptId)
+
+    const { error } = await query
+    if (error) throw new Error(`[CampaignsRepository.clearPrimaryFlag] ${error.message}`)
   }
 
   async createAssistanceMethod(
@@ -432,6 +646,12 @@ export class CampaignsRepository {
         alias: input.alias ?? null,
         country_code: input.countryCode ?? 'VE',
         notes: input.notes ?? null,
+        document_type: input.documentType ?? null,
+        address_country: input.addressCountry ?? null,
+        address_state: input.addressState ?? null,
+        address_city: input.addressCity ?? null,
+        address_line: input.addressLine ?? null,
+        purpose: input.purpose ?? null,
       })
       .select('*')
       .single()
@@ -459,6 +679,12 @@ export class CampaignsRepository {
         alias: input.alias ?? null,
         country_code: input.countryCode ?? 'VE',
         notes: input.notes ?? null,
+        document_type: input.documentType ?? null,
+        address_country: input.addressCountry ?? null,
+        address_state: input.addressState ?? null,
+        address_city: input.addressCity ?? null,
+        address_line: input.addressLine ?? null,
+        purpose: input.purpose ?? null,
       })
       .eq('id', input.methodId)
       .is('deleted_at', null)

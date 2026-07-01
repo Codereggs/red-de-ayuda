@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { requireAuth } from '@/shared/lib/auth/guards'
+import { requireCampaignAdminOrAdmin } from '@/shared/lib/auth/guards'
 import { createServerSupabaseClient } from '@/shared/lib/supabase/server'
 import type { ActionResult } from '@/shared/types/action-result'
 import type { Database, HelpType } from '@/shared/types/database.types'
@@ -58,7 +58,7 @@ export async function createHelpRecordAction(
   caseId: string,
   rawData: unknown,
 ): Promise<ActionResult<HelpRecordWithType>> {
-  const { profile } = await requireAuth()
+  const { profile } = await requireCampaignAdminOrAdmin()
   const parsedCaseId = idSchema.safeParse(caseId)
   const parsed = helpRecordFormSchema.safeParse(rawData)
 
@@ -114,7 +114,7 @@ export async function deleteHelpRecordAction(
   caseId: string,
   recordId: string,
 ): Promise<ActionResult<{ id: string }>> {
-  const { profile } = await requireAuth()
+  const { profile } = await requireCampaignAdminOrAdmin()
   const parsed = z.object({ caseId: idSchema, recordId: idSchema }).safeParse({ caseId, recordId })
   if (!parsed.success) return { success: false, error: 'Identificador inválido.' }
 
@@ -136,7 +136,7 @@ export async function deleteHelpRecordAction(
 }
 
 export async function createHelpTypeAction(rawData: unknown): Promise<ActionResult<HelpType>> {
-  const { profile } = await requireAuth()
+  const { profile } = await requireCampaignAdminOrAdmin()
   const parsed = helpTypeCategoryCreateSchema.safeParse(rawData)
   if (!parsed.success) {
     return {
