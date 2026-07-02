@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
+import { PasswordInput } from '@/shared/components/password-input'
 import {
   updateProfileSchema,
   changePasswordSchema,
@@ -159,9 +160,8 @@ function PasswordForm() {
           <label htmlFor="currentPassword" className={labelClass}>
             Contraseña actual
           </label>
-          <input
+          <PasswordInput
             id="currentPassword"
-            type="password"
             autoComplete="current-password"
             className={inputClass}
             {...register('currentPassword')}
@@ -175,9 +175,8 @@ function PasswordForm() {
           <label htmlFor="newPassword" className={labelClass}>
             Nueva contraseña
           </label>
-          <input
+          <PasswordInput
             id="newPassword"
-            type="password"
             autoComplete="new-password"
             className={inputClass}
             {...register('newPassword')}
@@ -191,9 +190,8 @@ function PasswordForm() {
           <label htmlFor="confirmPassword" className={labelClass}>
             Confirmar nueva contraseña
           </label>
-          <input
+          <PasswordInput
             id="confirmPassword"
-            type="password"
             autoComplete="new-password"
             className={inputClass}
             {...register('confirmPassword')}
