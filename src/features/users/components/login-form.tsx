@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Turnstile } from '@marsidev/react-turnstile'
 import { loginAction } from '../actions/auth.actions'
 import { loginFormSchema, type LoginFormValues } from '../schemas/auth.schema'
 
@@ -13,10 +14,11 @@ export function LoginForm() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: '', password: '', turnstileToken: '' },
   })
 
   const onSubmit = handleSubmit((data) => {
@@ -62,6 +64,18 @@ export function LoginForm() {
         />
         {errors.password && (
           <p className="text-xs text-destructive">{errors.password.message}</p>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Turnstile
+          siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+          onSuccess={(token) => setValue('turnstileToken', token, { shouldValidate: true })}
+          onExpire={() => setValue('turnstileToken', '', { shouldValidate: true })}
+          onError={() => setValue('turnstileToken', '', { shouldValidate: true })}
+        />
+        {errors.turnstileToken && (
+          <p className="text-xs text-destructive">{errors.turnstileToken.message}</p>
         )}
       </div>
 
