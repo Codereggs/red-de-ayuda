@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/shared/lib/supabase/server'
+import { verifyTurnstileToken } from '@/shared/lib/turnstile/verify'
 import { loginFormSchema } from '../schemas/auth.schema'
 import type { ActionResult } from '@/shared/types/action-result'
 import type { Profile } from '@/shared/types/database.types'
@@ -16,7 +17,13 @@ export async function loginAction(rawData: unknown): Promise<ActionResult<void>>
     }
   }
 
-  const { email, password } = parsed.data
+  const { email, password, turnstileToken } = parsed.data
+
+  const isHuman = await verifyTurnstileToken(turnstileToken)
+  if (!isHuman) {
+    return { success: false, error: 'Verificación de seguridad fallida. Intenta de nuevo.' }
+  }
+
   const client = await createServerSupabaseClient()
 
   const { data, error } = await client.auth.signInWithPassword({ email, password })
