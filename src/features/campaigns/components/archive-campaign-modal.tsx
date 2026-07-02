@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { toast } from 'sonner'
 import { Loader2, X } from 'lucide-react'
 import { archiveCampaignAction } from '../actions/campaigns.actions'
 import { archiveCampaignSchema, type ArchiveCampaignValues } from '../schemas/campaigns.schema'
@@ -36,6 +37,7 @@ export function ArchiveCampaignModal({
       const result = await archiveCampaignAction(campaignId, data)
       if (result && !result.success) {
         setServerError(result.error)
+        toast.error(result.error)
       }
     })
   }

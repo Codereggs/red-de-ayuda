@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Plus, Trash2, Loader2, ChevronRight, Pencil } from 'lucide-react'
@@ -115,7 +116,7 @@ export function CampaignAssistanceMethodsManager({
     startTransition(async () => {
       if (editingId) {
         const result = await updateAssistanceMethodAction(campaignId, editingId, data)
-        if (!result.success) { setError(result.error); return }
+        if (!result.success) { setError(result.error); toast.error(result.error); return }
         setMethods((prev) =>
           sortMethods(
             prev.map((m) => {
@@ -149,15 +150,17 @@ export function CampaignAssistanceMethodsManager({
           ),
         )
         closeForm()
+        toast.success('Método de pago actualizado.')
         return
       }
       const result = await createAssistanceMethodAction(campaignId, data)
-      if (!result.success) { setError(result.error); return }
+      if (!result.success) { setError(result.error); toast.error(result.error); return }
       setMethods((prev) => {
         const cleared = data.isPrimary ? prev.map((m) => ({ ...m, is_primary: false })) : prev
         return sortMethods([...cleared, result.data])
       })
       closeForm()
+      toast.success('Método de pago agregado.')
     })
   }
 
@@ -165,8 +168,9 @@ export function CampaignAssistanceMethodsManager({
     setError(null)
     startTransition(async () => {
       const result = await deleteAssistanceMethodAction(campaignId, id)
-      if (!result.success) { setError(result.error); return }
+      if (!result.success) { setError(result.error); toast.error(result.error); return }
       setMethods((prev) => prev.filter((m) => m.id !== id))
+      toast.success('Método de pago eliminado.')
     })
   }
 

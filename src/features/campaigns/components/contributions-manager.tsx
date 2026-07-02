@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import { Plus, ExternalLink, CheckCircle, XCircle, Trash2, Loader2 } from 'lucide-react'
 import { ContributionFormModal } from './contribution-form-modal'
 import { ContributionStatusBadge } from './campaign-status-badge'
@@ -54,10 +55,11 @@ export function ContributionsManager({
     setError(null)
     startTransition(async () => {
       const result = await verifyContributionAction(campaignId, id)
-      if (!result.success) { setError(result.error); return }
+      if (!result.success) { setError(result.error); toast.error(result.error); return }
       setContributions((prev) =>
         prev.map((c) => (c.id === id ? { ...c, status: 'verified' as const } : c)),
       )
+      toast.success('Aporte verificado.')
     })
   }
 
@@ -65,10 +67,11 @@ export function ContributionsManager({
     setError(null)
     startTransition(async () => {
       const result = await rejectContributionAction(campaignId, id)
-      if (!result.success) { setError(result.error); return }
+      if (!result.success) { setError(result.error); toast.error(result.error); return }
       setContributions((prev) =>
         prev.map((c) => (c.id === id ? { ...c, status: 'rejected' as const } : c)),
       )
+      toast.success('Aporte rechazado.')
     })
   }
 
@@ -76,14 +79,15 @@ export function ContributionsManager({
     setError(null)
     startTransition(async () => {
       const result = await deleteContributionAction(campaignId, id)
-      if (!result.success) { setError(result.error); return }
+      if (!result.success) { setError(result.error); toast.error(result.error); return }
       setContributions((prev) => prev.filter((c) => c.id !== id))
+      toast.success('Aporte eliminado.')
     })
   }
 
   async function handleViewReceipt(path: string) {
     const result = await getReceiptSignedUrlAction(path)
-    if (!result.success) { setError(result.error); return }
+    if (!result.success) { setError(result.error); toast.error(result.error); return }
     window.open(result.data.url, '_blank', 'noopener,noreferrer')
   }
 

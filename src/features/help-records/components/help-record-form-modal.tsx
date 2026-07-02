@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Check, Loader2, Plus, Search, X } from 'lucide-react'
 import { useForm } from 'react-hook-form'
@@ -96,8 +97,10 @@ export function HelpRecordFormModal({
       const result = await action(values)
       if (!result.success) {
         setError('root', { message: result.error })
+        toast.error(result.error)
         return
       }
+      toast.success('Ayuda guardada.')
       onSaved(result.data)
     })
   }

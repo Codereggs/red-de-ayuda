@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ClipboardList, LayoutDashboard, ScrollText, Users, Megaphone } from 'lucide-react'
+import { ClipboardList, LayoutDashboard, ScrollText, Users, Megaphone, UserCog } from 'lucide-react'
 
 interface DashboardNavProps {
   isAdmin: boolean
@@ -28,6 +28,7 @@ export function DashboardNav({ isAdmin, isCampaignAdminOrAdmin, mobile = false }
           { href: '/dashboard/logs', label: 'Registros', icon: ScrollText, exact: false },
         ]
       : []),
+    { href: '/dashboard/profile', label: 'Mi cuenta', icon: UserCog, exact: false },
   ]
 
   return (

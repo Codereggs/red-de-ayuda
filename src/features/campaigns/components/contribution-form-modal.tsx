@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useTransition, useState } from 'react'
+import { toast } from 'sonner'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader2, X } from 'lucide-react'
@@ -48,7 +49,9 @@ export function ContributionFormModal({
           setUploadingFile(true)
           receiptImagePath = await uploadReceiptFromClient(campaignId, file)
         } catch (err) {
-          setServerError(err instanceof Error ? err.message : 'Error al subir el comprobante.')
+          const message = err instanceof Error ? err.message : 'Error al subir el comprobante.'
+          setServerError(message)
+          toast.error(message)
           setUploadingFile(false)
           return
         }
@@ -62,8 +65,10 @@ export function ContributionFormModal({
 
       if (!result.success) {
         setServerError(result.error)
+        toast.error(result.error)
         return
       }
+      toast.success('Aporte registrado.')
       onSuccess?.(result.data)
       onClose()
     })

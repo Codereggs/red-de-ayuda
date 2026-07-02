@@ -1,18 +1,22 @@
 import { requireAdmin } from '@/shared/lib/auth/guards'
-import { CreateHelperForm } from '@/features/users/components/create-helper-form'
+import { createServiceSupabaseClient } from '@/shared/lib/supabase/server'
+import { createUsersRepository } from '@/features/users/repositories/users.repository'
+import { UsersPanel } from '@/features/users/components/users-panel'
 
 export default async function UsersPage() {
-  await requireAdmin()
+  const { profile } = await requireAdmin()
+
+  const client = createServiceSupabaseClient()
+  const users = await createUsersRepository(client).listAll()
+
   return (
-    <div className="max-w-5xl mx-auto px-6 py-12">
-      <h1 className="font-display text-3xl font-medium text-foreground">Usuarios</h1>
-      <p className="text-muted-foreground text-sm mt-2">
-        Registra una cuenta de helper. Queda activa de inmediato, sin correo de confirmación.
+    <div className="mx-auto max-w-5xl px-6 py-12">
+      <h1 className="font-display text-foreground text-3xl font-medium">Usuarios</h1>
+      <p className="text-muted-foreground mt-2 text-sm">
+        Gestiona las cuentas del equipo: activa o desactiva accesos y registra nuevos helpers.
       </p>
 
-      <div className="mt-8">
-        <CreateHelperForm />
-      </div>
+      <UsersPanel users={users} currentUserId={profile.id} />
     </div>
   )
 }

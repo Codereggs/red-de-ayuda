@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTransition } from 'react'
+import { toast } from 'sonner'
 import { AlertTriangle, Loader2, X } from 'lucide-react'
 import { archiveCaseSchema, type ArchiveCaseValues } from '../schemas/cases.schema'
 import type { ActionResult } from '@/shared/types/action-result'
@@ -30,6 +31,7 @@ export function ArchiveModal({ caseName, action, onClose }: ArchiveModalProps) {
       const result = await action(data)
       if (result && !result.success) {
         setError('root', { message: result.error })
+        toast.error(result.error)
       }
     })
   }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import { ImagePlus, Trash2, Loader2, X } from 'lucide-react'
 import { uploadCampaignImageFromClient } from '@/shared/lib/supabase/storage.client'
 import {
@@ -39,10 +40,17 @@ export function CampaignImagesManager({
         setUploading({ done: i + 1, total: list.length })
       }
       const result = await addCampaignImagesAction(campaignId, paths)
-      if (!result.success) { setError(result.error); return }
+      if (!result.success) { setError(result.error); toast.error(result.error); return }
       setImages((prev) => [...prev, ...result.data.images])
+      toast.success(
+        result.data.images.length === 1
+          ? 'Imagen agregada.'
+          : `${result.data.images.length} imágenes agregadas.`,
+      )
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al subir imágenes.')
+      const message = err instanceof Error ? err.message : 'Error al subir imágenes.'
+      setError(message)
+      toast.error(message)
     } finally {
       setUploading(null)
       if (fileRef.current) fileRef.current.value = ''
@@ -53,8 +61,9 @@ export function CampaignImagesManager({
     setError(null)
     startTransition(async () => {
       const result = await deleteCampaignImageAction(campaignId, id)
-      if (!result.success) { setError(result.error); return }
+      if (!result.success) { setError(result.error); toast.error(result.error); return }
       setImages((prev) => prev.filter((img) => img.id !== id))
+      toast.success('Imagen eliminada.')
     })
   }
 

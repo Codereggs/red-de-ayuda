@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 import { ArrowLeft, Pencil, Archive } from 'lucide-react'
 import { CampaignStatusBadge } from '@/features/campaigns/components/campaign-status-badge'
 import { CampaignProgressBar } from '@/features/campaigns/components/campaign-progress-bar'
@@ -50,7 +51,12 @@ export function CampaignDetailClient({
   function handleStatusChange(newStatus: Campaign['status']) {
     startTransition(async () => {
       const result = await updateCampaignStatusAction(campaign.id, { status: newStatus })
-      if (result.success) setCurrentStatus(newStatus)
+      if (result.success) {
+        setCurrentStatus(newStatus)
+        toast.success(`Estado cambiado a "${CAMPAIGN_STATUS_LABELS[newStatus]}".`)
+      } else {
+        toast.error(result.error)
+      }
     })
   }
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { Loader2, PackageOpen, Pencil, Plus, Trash2 } from 'lucide-react'
 import type { NeedCategory } from '@/shared/types/database.types'
@@ -56,12 +57,14 @@ export function NeedsManager({
       const result = await deleteNeedAction(caseId, needId)
       if (!result.success) {
         setDeleteError(result.error)
+        toast.error(result.error)
         return
       }
       queryClient.setQueryData<CaseNeedWithCategory[]>(needsKeys.byCase(caseId), (current = []) =>
         current.filter((need) => need.id !== needId),
       )
       setPendingDeleteId(null)
+      toast.success('Necesidad eliminada.')
     })
   }
 

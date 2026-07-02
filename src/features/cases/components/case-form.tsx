@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTransition } from 'react'
+import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { createOrUpdateCaseSchema, type CreateOrUpdateCaseValues } from '../schemas/cases.schema'
@@ -41,6 +42,7 @@ export function CaseForm({ action, defaultValues, mode = 'create' }: CaseFormPro
       const result = await action(data)
       if (result && !result.success) {
         setError('root', { message: result.error })
+        toast.error(result.error)
         if (result.fieldErrors) {
           Object.entries(result.fieldErrors).forEach(([field, messages]) => {
             setError(field as keyof CreateOrUpdateCaseValues, {

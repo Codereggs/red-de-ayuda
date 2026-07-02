@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { CalendarDays, HandHeart, Loader2, Plus, Trash2 } from 'lucide-react'
 import type { HelpType } from '@/shared/types/database.types'
@@ -69,6 +70,7 @@ export function HelpRecordsManager({
       const result = await deleteHelpRecordAction(caseId, recordId)
       if (!result.success) {
         setDeleteError(result.error)
+        toast.error(result.error)
         return
       }
       queryClient.setQueryData<HelpRecordWithType[]>(
@@ -76,6 +78,7 @@ export function HelpRecordsManager({
         (current = []) => current.filter((record) => record.id !== recordId),
       )
       setPendingDeleteId(null)
+      toast.success('Ayuda eliminada.')
     })
   }
 

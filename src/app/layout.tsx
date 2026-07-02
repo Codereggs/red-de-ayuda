@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { DM_Mono, Lora, Nunito } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { Toaster } from 'sonner'
 import './globals.css'
 import { QueryProvider } from '@/shared/components/providers/query-provider'
 
@@ -49,6 +50,7 @@ export default function RootLayout({
     >
       <body>
         <QueryProvider>{children}</QueryProvider>
+        <Toaster richColors position="top-center" toastOptions={{ className: 'font-body' }} />
         <Analytics />
       </body>
     </html>

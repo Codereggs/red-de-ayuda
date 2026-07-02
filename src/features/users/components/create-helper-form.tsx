@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { toast } from 'sonner'
 import { createHelperAction } from '../actions/users.actions'
 import { createHelperFormSchema, type CreateHelperFormValues } from '../schemas/auth.schema'
 
@@ -28,9 +29,11 @@ export function CreateHelperForm() {
       const result = await createHelperAction(data)
       if (!result.success) {
         setGlobalError(result.error)
+        toast.error(result.error)
         return
       }
       setSuccessMessage(`Helper "${result.data.full_name}" registrado y activo.`)
+      toast.success(`Helper "${result.data.full_name}" registrado y activo.`)
       reset()
     })
   })

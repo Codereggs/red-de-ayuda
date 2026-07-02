@@ -1,6 +1,7 @@
 'use client'
 
 import { useTransition, useState, useRef, useEffect } from 'react'
+import { toast } from 'sonner'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Plus, Trash2, Loader2, UserPlus, X, Check, Search, Upload, Pencil, ChevronRight, AlertTriangle } from 'lucide-react'
@@ -68,7 +69,7 @@ function NeedCategoryCombobox({
     setIsCreating(true)
     const result = await createNeedCategoryAction({ name })
     setIsCreating(false)
-    if (!result.success) { setCreateError(result.error); return }
+    if (!result.success) { setCreateError(result.error); toast.error(result.error); return }
     onCategoryCreated(result.data)
     onChange(result.data.id)
     setQuery('')
@@ -186,10 +187,11 @@ export function CampaignMembersManager({
     void (async () => {
       const result = await deleteAllCampaignMembersAction(campaignId, purgeText)
       setIsPurging(false)
-      if (!result.success) { setPurgeError(result.error); return }
+      if (!result.success) { setPurgeError(result.error); toast.error(result.error); return }
       setMembers([])
       setShowPurgeModal(false)
       setPurgeText('')
+      toast.success(`${result.data.deleted} miembros eliminados.`)
     })()
   }
 
@@ -231,8 +233,9 @@ export function CampaignMembersManager({
     void (async () => {
       const result = await bulkAddCampaignMembersAction(campaignId, bulkPreview)
       setIsBulkImporting(false)
-      if (!result.success) { setBulkError(result.error); return }
+      if (!result.success) { setBulkError(result.error); toast.error(result.error); return }
       setBulkResult(result.data)
+      toast.success(`${result.data.added} miembros importados.`)
       setTimeout(() => {
         window.location.reload()
       }, 1500)
@@ -299,7 +302,7 @@ export function CampaignMembersManager({
     startTransition(async () => {
       if (editingCaseId) {
         const result = await updateCampaignMemberAction(campaignId, editingCaseId, data)
-        if (!result.success) { setError(result.error); return }
+        if (!result.success) { setError(result.error); toast.error(result.error); return }
         setMembers((prev) =>
           prev.map((m) => {
             if (m.caseId !== editingCaseId) return m
@@ -321,10 +324,11 @@ export function CampaignMembersManager({
           }),
         )
         closeForm()
+        toast.success('Miembro actualizado.')
         return
       }
       const result = await addCampaignMemberAction(campaignId, data)
-      if (!result.success) { setError(result.error); return }
+      if (!result.success) { setError(result.error); toast.error(result.error); return }
       const newMember: PublicCampaignMember = {
         caseId: result.data.caseId,
         fullName: data.fullName,
@@ -341,21 +345,23 @@ export function CampaignMembersManager({
       }
       setMembers((prev) => [...prev, newMember])
       closeForm()
+      toast.success('Miembro agregado.')
     })
   }
 
   function handleRemove(caseId: string) {
     startTransition(async () => {
       const result = await removeCampaignMemberAction(campaignId, caseId)
-      if (!result.success) { setError(result.error); return }
+      if (!result.success) { setError(result.error); toast.error(result.error); return }
       setMembers((prev) => prev.filter((m) => m.caseId !== caseId))
+      toast.success('Miembro eliminado.')
     })
   }
 
   function handleTogglePurchased(caseId: string, needId: string, currentlyPurchased: boolean) {
     startTransition(async () => {
       const result = await toggleNeedPurchasedAction(needId, campaignId, !currentlyPurchased)
-      if (!result.success) { setError(result.error); return }
+      if (!result.success) { setError(result.error); toast.error(result.error); return }
       setMembers((prev) =>
         prev.map((m) =>
           m.caseId !== caseId
