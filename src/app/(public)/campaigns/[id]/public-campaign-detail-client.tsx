@@ -21,6 +21,102 @@ const TYPE_LABELS: Record<string, string> = {
   physical_delivery: 'Entrega física',
 }
 
+function PaymentMethodCard({ method }: { method: CampaignAssistanceMethod }) {
+  const {
+    label,
+    type,
+    holder_full_name: holderFullName,
+    document_type: documentType,
+    id_number: idNumber,
+    phone,
+    bank_name: bankName,
+    account_type: accountType,
+    account_number: accountNumber,
+    alias,
+    address_line: addressLine,
+    address_city: addressCity,
+    address_state: addressState,
+    address_country: addressCountry,
+    purpose,
+    notes,
+  } = method
+
+  const address = [addressLine, addressCity, addressState, addressCountry]
+    .filter(Boolean)
+    .join(', ')
+
+  return (
+    <li className="bg-muted/40 rounded-xl p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-foreground text-sm font-medium">{label}</p>
+        <span className="text-muted-foreground text-xs">{TYPE_LABELS[type]}</span>
+      </div>
+      <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+        <div>
+          <dt className="text-muted-foreground">Titular</dt>
+          <dd className="text-foreground">{holderFullName}</dd>
+        </div>
+        {idNumber && (
+          <div>
+            <dt className="text-muted-foreground">Documento</dt>
+            <dd className="text-foreground font-mono">
+              {documentType ? `${documentType}${idNumber}` : idNumber}
+            </dd>
+          </div>
+        )}
+        {phone && (
+          <div>
+            <dt className="text-muted-foreground">Teléfono</dt>
+            <dd className="text-foreground font-mono">{phone}</dd>
+          </div>
+        )}
+        {bankName && (
+          <div>
+            <dt className="text-muted-foreground">Banco</dt>
+            <dd className="text-foreground">{bankName}</dd>
+          </div>
+        )}
+        {accountType && (
+          <div>
+            <dt className="text-muted-foreground">Tipo de cuenta</dt>
+            <dd className="text-foreground capitalize">{accountType}</dd>
+          </div>
+        )}
+        {accountNumber && (
+          <div>
+            <dt className="text-muted-foreground">Cuenta</dt>
+            <dd className="text-foreground font-mono">{accountNumber}</dd>
+          </div>
+        )}
+        {alias && (
+          <div>
+            <dt className="text-muted-foreground">Alias</dt>
+            <dd className="text-foreground font-mono">{alias}</dd>
+          </div>
+        )}
+        {address && (
+          <div className="col-span-2">
+            <dt className="text-muted-foreground">Dirección</dt>
+            <dd className="text-foreground">{address}</dd>
+          </div>
+        )}
+        {purpose && (
+          <div className="col-span-2">
+            <dt className="text-muted-foreground">Propósito</dt>
+            <dd className="text-foreground">{purpose}</dd>
+          </div>
+        )}
+        {notes && (
+          <div className="col-span-2">
+            <dt className="text-muted-foreground">Notas</dt>
+            <dd className="text-foreground">{notes}</dd>
+          </div>
+        )}
+      </dl>
+    </li>
+  )
+}
+
 export function PublicCampaignDetailClient({
   campaign,
   isHelper,
@@ -194,73 +290,8 @@ export function PublicCampaignDetailClient({
             </div>
           ) : methods && methods.length > 0 ? (
             <ul className="flex flex-col gap-3">
-              {methods.map((m) => (
-                <li key={m.id} className="bg-muted/40 rounded-xl p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-foreground text-sm font-medium">{m.label}</p>
-                    <span className="text-muted-foreground text-xs">{TYPE_LABELS[m.type]}</span>
-                  </div>
-                  <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                    <div>
-                      <dt className="text-muted-foreground">Titular</dt>
-                      <dd className="text-foreground">{m.holder_full_name}</dd>
-                    </div>
-                    {m.id_number && (
-                      <div>
-                        <dt className="text-muted-foreground">Documento</dt>
-                        <dd className="text-foreground font-mono">
-                          {m.document_type ? `${m.document_type}${m.id_number}` : m.id_number}
-                        </dd>
-                      </div>
-                    )}
-                    {m.phone && (
-                      <div>
-                        <dt className="text-muted-foreground">Teléfono</dt>
-                        <dd className="text-foreground font-mono">{m.phone}</dd>
-                      </div>
-                    )}
-                    {m.bank_name && (
-                      <div>
-                        <dt className="text-muted-foreground">Banco</dt>
-                        <dd className="text-foreground">{m.bank_name}</dd>
-                      </div>
-                    )}
-                    {m.account_type && (
-                      <div>
-                        <dt className="text-muted-foreground">Tipo de cuenta</dt>
-                        <dd className="text-foreground capitalize">{m.account_type}</dd>
-                      </div>
-                    )}
-                    {m.account_number && (
-                      <div>
-                        <dt className="text-muted-foreground">Cuenta</dt>
-                        <dd className="text-foreground font-mono">{m.account_number}</dd>
-                      </div>
-                    )}
-                    {(m.address_line || m.address_city || m.address_state || m.address_country) && (
-                      <div className="col-span-2">
-                        <dt className="text-muted-foreground">Dirección</dt>
-                        <dd className="text-foreground">
-                          {[m.address_line, m.address_city, m.address_state, m.address_country]
-                            .filter(Boolean)
-                            .join(', ')}
-                        </dd>
-                      </div>
-                    )}
-                    {m.purpose && (
-                      <div className="col-span-2">
-                        <dt className="text-muted-foreground">Propósito</dt>
-                        <dd className="text-foreground">{m.purpose}</dd>
-                      </div>
-                    )}
-                    {m.notes && (
-                      <div className="col-span-2">
-                        <dt className="text-muted-foreground">Notas</dt>
-                        <dd className="text-foreground">{m.notes}</dd>
-                      </div>
-                    )}
-                  </dl>
-                </li>
+              {methods.map((method) => (
+                <PaymentMethodCard key={method.id} method={method} />
               ))}
             </ul>
           ) : (
