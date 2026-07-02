@@ -4,6 +4,7 @@ import { getSession, isActiveHelperOrAdmin } from '@/shared/lib/auth/get-session
 import { createServiceSupabaseClient } from '@/shared/lib/supabase/server'
 import { createCasesRepository } from '@/features/cases/repositories/cases.repository'
 import { hashIp } from '@/shared/lib/rate-limit'
+import { getClientIp } from '@/shared/lib/request-ip'
 
 const copyLogSchema = z.object({
   caseId: z.string().uuid(),
@@ -23,11 +24,7 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: 'Datos de registro inválidos.' }, { status: 400 })
     }
 
-    const forwarded = req.headers.get('x-forwarded-for')
-    const rawIp = forwarded
-      ? forwarded.split(',')[0].trim()
-      : (req.headers.get('x-real-ip') ?? 'unknown')
-    const ipHash = hashIp(rawIp)
+    const ipHash = hashIp(getClientIp(req))
     const serviceClient = createServiceSupabaseClient()
     const repo = createCasesRepository(serviceClient)
     const publicCase = await repo.findPublicById(parsed.data.caseId)

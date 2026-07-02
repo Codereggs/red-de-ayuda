@@ -17,6 +17,7 @@ import type { DashboardOverview as DashboardOverviewData } from '../types/dashbo
 interface DashboardOverviewProps {
   data: DashboardOverviewData
   firstName: string
+  canManage: boolean
 }
 
 function formatDate(value: string, dateOnly = false): string {
@@ -66,7 +67,7 @@ function StatCard({
   )
 }
 
-export function DashboardOverview({ data, firstName }: DashboardOverviewProps) {
+export function DashboardOverview({ data, firstName, canManage }: DashboardOverviewProps) {
   const { metrics, recentCases, recentHelpRecords, recentCampaigns } = data
 
   return (
@@ -79,13 +80,15 @@ export function DashboardOverview({ data, firstName }: DashboardOverviewProps) {
             Resumen operativo de casos verificados y ayudas registradas.
           </p>
         </div>
-        <Link
-          href="/dashboard/cases/new"
-          className="bg-primary text-primary-foreground hover:bg-primary/85 inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm transition-colors"
-        >
-          <Plus className="size-4" />
-          Crear caso
-        </Link>
+        {canManage && (
+          <Link
+            href="/dashboard/cases/new"
+            className="bg-primary text-primary-foreground hover:bg-primary/85 inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm transition-colors"
+          >
+            <Plus className="size-4" />
+            Crear caso
+          </Link>
+        )}
       </div>
 
       <section aria-labelledby="dashboard-metrics">

@@ -144,26 +144,31 @@ export function CampaignDetailClient({
         )}
       </div>
 
-      <ContributionsManager
-        campaignId={campaign.id}
-        initialContributions={contributions}
-        readOnly={isArchived}
-        canManage={isCampaignAdminOrAdmin}
-      />
-
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <CampaignMembersManager
-          campaignId={campaign.id}
-          initialMembers={members}
-          needCategories={needCategories}
-          readOnly={isArchived || !isCampaignAdminOrAdmin}
-          canPurge={isAdmin && !isArchived}
-        />
-        <CampaignAssistanceMethodsManager
-          campaignId={campaign.id}
-          initialMethods={assistanceMethods}
-          readOnly={isArchived || !isCampaignAdminOrAdmin}
-        />
+      <div className="mt-6 flex flex-col gap-6 lg:grid lg:grid-cols-2">
+        <div className="order-2 lg:order-1 lg:col-span-2">
+          <ContributionsManager
+            campaignId={campaign.id}
+            initialContributions={contributions}
+            readOnly={isArchived}
+            canManage={isCampaignAdminOrAdmin}
+          />
+        </div>
+        <div className="order-3 lg:order-2">
+          <CampaignMembersManager
+            campaignId={campaign.id}
+            initialMembers={members}
+            needCategories={needCategories}
+            readOnly={isArchived || !isCampaignAdminOrAdmin}
+            canPurge={isAdmin && !isArchived}
+          />
+        </div>
+        <div className="order-1 lg:order-3">
+          <CampaignAssistanceMethodsManager
+            campaignId={campaign.id}
+            initialMethods={assistanceMethods}
+            readOnly={isArchived || !isCampaignAdminOrAdmin}
+          />
+        </div>
       </div>
 
       <div className="mt-6">

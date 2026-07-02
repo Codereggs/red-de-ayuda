@@ -5,6 +5,7 @@ import { createServiceSupabaseClient } from '@/shared/lib/supabase/server'
 import type { Database } from '@/shared/types/database.types'
 import { createCampaignsRepository } from '@/features/campaigns/repositories/campaigns.repository'
 import { checkRevealRateLimit, hashIp } from '@/shared/lib/rate-limit'
+import { getClientIp } from '@/shared/lib/request-ip'
 
 type AccessLogInsert =
   Database['public']['Tables']['campaign_assistance_method_access_logs']['Insert']
@@ -25,11 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       )
     }
 
-    const forwarded = req.headers.get('x-forwarded-for')
-    const rawIp = forwarded
-      ? forwarded.split(',')[0].trim()
-      : (req.headers.get('x-real-ip') ?? 'unknown')
-    const ipHash = hashIp(rawIp)
+    const ipHash = hashIp(getClientIp(req))
     const rl = checkRevealRateLimit(ipHash)
 
     if (!rl.ok) {

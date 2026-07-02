@@ -15,7 +15,8 @@ function formatDate(dateStr: string) {
 }
 
 export default async function CampaignsPage() {
-  await requireAuth()
+  const { profile } = await requireAuth()
+  const canManage = profile.role === 'admin' || profile.role === 'campaign_admin'
 
   const client = await createServerSupabaseClient()
   const repo = createCampaignsRepository(client)
@@ -31,25 +32,29 @@ export default async function CampaignsPage() {
             {campaigns.length} {campaigns.length === 1 ? 'campaña' : 'campañas'} activas
           </p>
         </div>
-        <Link
-          href="/dashboard/campaigns/new"
-          className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors"
-        >
-          <Plus className="size-4" />
-          Nueva campaña
-        </Link>
+        {canManage && (
+          <Link
+            href="/dashboard/campaigns/new"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors"
+          >
+            <Plus className="size-4" />
+            Nueva campaña
+          </Link>
+        )}
       </div>
 
       {campaigns.length === 0 ? (
         <div className="bg-card border-border rounded-2xl border p-12 text-center">
           <p className="text-muted-foreground text-sm">No hay campañas registradas aún.</p>
-          <Link
-            href="/dashboard/campaigns/new"
-            className="text-primary mt-4 inline-flex items-center gap-1.5 text-sm font-medium hover:underline"
-          >
-            <Plus className="size-4" />
-            Crear la primera campaña
-          </Link>
+          {canManage && (
+            <Link
+              href="/dashboard/campaigns/new"
+              className="text-primary mt-4 inline-flex items-center gap-1.5 text-sm font-medium hover:underline"
+            >
+              <Plus className="size-4" />
+              Crear la primera campaña
+            </Link>
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-4">

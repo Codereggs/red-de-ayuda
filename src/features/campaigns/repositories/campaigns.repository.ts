@@ -591,6 +591,17 @@ export class CampaignsRepository {
     if (error) throw new Error(`[CampaignsRepository.findHelperContribution] ${error.message}`)
     return (data ?? []).length > 0
   }
+  async receiptPathExists(receiptImagePath: string): Promise<boolean> {
+    const { data, error } = await this.db
+      .from('campaign_contributions')
+      .select('id')
+      .eq('receipt_image_path', receiptImagePath)
+      .is('deleted_at', null)
+      .limit(1)
+
+    if (error) throw new Error(`[CampaignsRepository.receiptPathExists] ${error.message}`)
+    return (data ?? []).length > 0
+  }
 
   async createContribution(input: CreateContributionInput): Promise<CampaignContribution> {
     const { data, error } = await this.db

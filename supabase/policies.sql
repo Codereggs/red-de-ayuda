@@ -155,13 +155,14 @@ create policy "case_private_data_internal_all" on public.case_private_data
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- case_phones
--- Public can read non-deleted phones for public cases (shown in help modal Step 1).
+-- NO public SELECT. Phone numbers are PII and part of the reveal scope — served
+-- ONLY through the server-side reveal endpoint (service role), which rate-limits
+-- and logs every access. A public policy would let anyone scrape all phones via
+-- the anon key, unlogged.
 -- Helpers/admins can manage all phones.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 drop policy if exists "case_phones_public_select_for_public_cases" on public.case_phones;
-create policy "case_phones_public_select_for_public_cases" on public.case_phones
-  for select using (deleted_at is null and public.is_public_case(case_id));
 
 drop policy if exists "case_phones_internal_all" on public.case_phones;
 create policy "case_phones_internal_all" on public.case_phones
@@ -235,14 +236,13 @@ create policy "help_record_needs_internal_all" on public.help_record_needs
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- assistance_method_access_logs
--- Anyone can INSERT (logged by the reveal endpoint and copy action).
+-- NO public INSERT. Inserts are performed by the reveal/copy endpoints using the
+-- service-role client, which bypasses RLS. A public INSERT policy only enabled
+-- log flooding/poisoning via the anon key.
 -- Only admins can SELECT.
--- Application is responsible for validating case_id and method_id before insert.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 drop policy if exists "assistance_method_access_logs_insert_public" on public.assistance_method_access_logs;
-create policy "assistance_method_access_logs_insert_public" on public.assistance_method_access_logs
-  for insert with check (true);
 
 drop policy if exists "assistance_method_access_logs_admin_select" on public.assistance_method_access_logs;
 create policy "assistance_method_access_logs_admin_select" on public.assistance_method_access_logs

@@ -210,7 +210,8 @@ export async function bulkAddCampaignMembersAction(
     revalidateCampaign(campaignId)
     return { success: true, data: { added, newCategories: newCategoriesCount } }
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : 'Error en la importación.' }
+    console.error('[bulkAddCampaignMembersAction]', err)
+    return { success: false, error: 'Error en la importación. Intenta de nuevo.' }
   }
 }
 
@@ -237,7 +238,7 @@ export async function addCampaignImagesAction(
     return { success: true, data: { images } }
   } catch (err) {
     console.error('[addCampaignImagesAction]', err)
-    return { success: false, error: err instanceof Error ? err.message : 'Error al guardar imágenes.' }
+    return { success: false, error: 'Error al guardar imágenes. Intenta de nuevo.' }
   }
 }
 
@@ -264,7 +265,7 @@ export async function deleteCampaignImageAction(
     return { success: true, data: undefined }
   } catch (err) {
     console.error('[deleteCampaignImageAction]', err)
-    return { success: false, error: err instanceof Error ? err.message : 'Error al eliminar la imagen.' }
+    return { success: false, error: 'Error al eliminar la imagen. Intenta de nuevo.' }
   }
 }
 
@@ -343,10 +344,7 @@ export async function updateCampaignMemberAction(
     return { success: true, data: undefined }
   } catch (err) {
     console.error('[updateCampaignMemberAction]', err)
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : 'Error al actualizar el miembro.',
-    }
+    return { success: false, error: 'Error al actualizar el miembro. Intenta de nuevo.' }
   }
 }
 
@@ -388,7 +386,7 @@ export async function deleteAllCampaignMembersAction(
     return { success: true, data: result }
   } catch (err) {
     console.error('[deleteAllCampaignMembersAction]', err)
-    return { success: false, error: err instanceof Error ? err.message : 'Error al borrar los miembros.' }
+    return { success: false, error: 'Error al borrar los miembros. Intenta de nuevo.' }
   }
 }
 
@@ -566,10 +564,7 @@ export async function createAssistanceMethodAction(
     return { success: true, data: method }
   } catch (err) {
     console.error('[createAssistanceMethodAction]', err)
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : 'Error al crear el método de pago.',
-    }
+    return { success: false, error: 'Error al crear el método de pago. Intenta de nuevo.' }
   }
 }
 
@@ -645,9 +640,21 @@ export async function getReceiptSignedUrlAction(
 ): Promise<ActionResult<{ url: string }>> {
   await requireAuth()
 
+  const parsedPath = z.string().min(1).max(300).safeParse(receiptImagePath)
+  if (!parsedPath.success) {
+    return { success: false, error: 'Ruta de comprobante inválida.' }
+  }
+
   try {
+    const client = await createServerSupabaseClient()
+    const repo = createCampaignsRepository(client)
+    const exists = await repo.receiptPathExists(parsedPath.data)
+    if (!exists) {
+      return { success: false, error: 'Comprobante no encontrado.' }
+    }
+
     const { getCampaignReceiptSignedUrl } = await import('@/shared/lib/supabase/storage')
-    const url = await getCampaignReceiptSignedUrl(receiptImagePath)
+    const url = await getCampaignReceiptSignedUrl(parsedPath.data)
     return { success: true, data: { url } }
   } catch {
     return { success: false, error: 'Error al obtener el comprobante.' }

@@ -379,7 +379,7 @@ export function CampaignMembersManager({
 
   return (
     <section className="bg-card border-border rounded-2xl border p-6">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-display text-foreground text-base font-medium">
             Miembros ({members.length})
@@ -392,7 +392,7 @@ export function CampaignMembersManager({
           )}
         </div>
         {!readOnly && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => { setShowBulkModal(true); setBulkPreview(null); setBulkParseError(null); setBulkResult(null); setBulkError(null) }}
