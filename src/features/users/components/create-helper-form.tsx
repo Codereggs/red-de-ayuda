@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
+import { PasswordInput } from '@/shared/components/password-input'
 import { createHelperAction } from '../actions/users.actions'
 import { createHelperFormSchema, type CreateHelperFormValues } from '../schemas/auth.schema'
 
@@ -77,9 +78,8 @@ export function CreateHelperForm() {
         <label htmlFor="password" className="text-sm font-semibold text-foreground/80">
           Contraseña
         </label>
-        <input
+        <PasswordInput
           id="password"
-          type="password"
           autoComplete="new-password"
           placeholder="••••••••"
           className="w-full px-4 py-2.5 rounded-xl border border-border bg-input-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
